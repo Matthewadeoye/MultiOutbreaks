@@ -1,0 +1,4 @@
+CXX_STD = CXX11
+
+PKG_CPPFLAGS = -fopenmp
+PKG_LIBS = -fopenmp $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
