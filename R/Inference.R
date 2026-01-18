@@ -1,5 +1,5 @@
 #Inference Method 1 -- Smoothing
-SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.7){
+SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.1, y_total=NULL){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -38,6 +38,16 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
   for(k in 2:nstrain){
     sumY<- sumY + ifelse(is.na(y[,,k]),0,y[,,k])
     SumYk_vec[k]<- sum(y[,,k], na.rm = T)
+  }
+
+  if(is.null(y_total)){
+    sumY1<- y[,,1]
+    for(k in 2:nstrain){
+      sumY1<- sumY1 + y[,,1]
+    }
+    y_total<- sumY1
+  }else{
+    y_total<- y_total
   }
 
   crudeResults<- crudeEst(sumY, e_it)
@@ -97,7 +107,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
 
   if(Model == 0) JointTPM<- matrix(0, nstate, nstate)
 
-  Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[1, num_Gammas+3+(1:time)], s=MC_chain[1, num_Gammas+3+time+(1:12)], u=MC_chain[1, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+  Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[1, num_Gammas+3+(1:time)], s=MC_chain[1, num_Gammas+3+time+(1:12)], u=MC_chain[1, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
   likelihoodcurrent<- Allquantities$loglike
   priorcurrentRcomps<- randomwalk2_cpp(MC_chain[1, num_Gammas+3+(1:time)], MC_chain[1, num_Gammas+1])
   priorcurrentScomps<- seasonalComp2_cpp(MC_chain[1, num_Gammas+3+time+(1:12)], MC_chain[1, num_Gammas+2], RW1PrecMat)
@@ -130,7 +140,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
     proposedScomps <- as.numeric(MC_chain[i-1, num_Gammas+3+time+(1:12)] + 0.5 * step_sizes$s^2 * Mmatcs + step_sizes$s * chol(grad_current$cov_s) %*% eps_s)
     proposedScomps<- proposedScomps - mean(proposedScomps)
 
-    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=current_r, s=proposedScomps, u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=current_r, s=proposedScomps, u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     Mmatps<- as.numeric(grad_proposed$cov_s %*% grad_proposed$grad_s)
@@ -157,7 +167,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
     proposedRcomps <- as.numeric(current_r + 0.5 * step_sizes$r^2 * Mmatrc + step_sizes$r * chol(grad_current$cov_r) %*% eps_r)
     proposedRcomps<- proposedRcomps - mean(proposedRcomps)
 
-    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=proposedRcomps, s=MC_chain[i, num_Gammas+3+time+(1:12)], u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=proposedRcomps, s=MC_chain[i, num_Gammas+3+time+(1:12)], u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     Mmatrp<- as.numeric(grad_proposed$cov_r %*% grad_proposed$grad_r)
@@ -189,7 +199,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
     propRate<- as.numeric(Allquantities$poisMean4GibbsUpdate) + 0.01/exp(-15)
     proposedAks<- log(rgamma(nstrain, shape = propShape, rate = propRate))
 
-    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=proposedUcomps, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=proposedAks, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=proposedUcomps, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=proposedAks, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     likelihoodproposed<- Allquantities$loglike
@@ -231,7 +241,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
       priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
       priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
-      Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedB, Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+      Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedB, Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
       grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
       likelihoodproposed<- Allquantities$loglike
@@ -249,6 +259,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
+      sdBs<- sdBs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
 
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -262,7 +273,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
-        Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+        Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
         grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
         likelihoodproposed<- Allquantities$loglike
@@ -298,7 +309,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }else{
 
-          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -318,6 +329,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
         }
+        sdGs<- sdGs * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
 
         #Factor loadings update
         proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
@@ -335,7 +347,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
         }else{
 
-          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total = y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -355,6 +367,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
         }
+        sdLambdas<- sdLambdas * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -380,7 +393,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
         }else{
           JointTPM1 <- JointTPM1 / rowSums(JointTPM1)
 
-          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1,  y_total = y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -407,6 +420,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
         }
+        sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
+        sdCop<- sdCop * exp((2/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype==7){
 
         for(n in 1:nstate){
@@ -421,10 +436,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
           priorproposedGs<- log(gtools::ddirichlet(JointTPM[n, ], rep(1, nstate)))
 
           if(n == nstate){
-            Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1)
+            Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1, y_total = y_total)
             grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
           }else{
-            Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0)
+            Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0, y_total = y_total)
           }
 
           likelihoodproposed<- Allquantities$loglike
@@ -490,7 +505,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
 
 
 #Inference Method 2 -- Sampling
-FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.7){
+FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.1, y_total=NULL){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -529,6 +544,16 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
   for(k in 2:nstrain){
     sumY<- sumY + ifelse(is.na(y[,,k]),0,y[,,k])
     SumYk_vec[k]<- sum(y[,,k], na.rm = T)
+  }
+
+  if(is.null(y_total)){
+    sumY1<- y[,,1]
+    for(k in 2:nstrain){
+      sumY1<- sumY1 + y[,,1]
+    }
+    y_total<- sumY1
+  }else{
+    y_total<- y_total
   }
 
   crudeResults<- crudeEst(sumY, e_it)
@@ -588,7 +613,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
 
   if(Model == 0) JointTPM<- matrix(0, nstate, nstate)
 
-  Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[1, num_Gammas+3+(1:time)], s=MC_chain[1, num_Gammas+3+time+(1:12)], u=MC_chain[1, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+  Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[1, num_Gammas+3+(1:time)], s=MC_chain[1, num_Gammas+3+time+(1:12)], u=MC_chain[1, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
   likelihoodcurrent<- Allquantities$loglike
   priorcurrentRcomps<- randomwalk2_cpp(MC_chain[1, num_Gammas+3+(1:time)], MC_chain[1, num_Gammas+1])
   priorcurrentScomps<- seasonalComp2_cpp(MC_chain[1, num_Gammas+3+time+(1:12)], MC_chain[1, num_Gammas+2], RW1PrecMat)
@@ -619,7 +644,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
     proposedScomps <- as.numeric(MC_chain[i-1, num_Gammas+3+time+(1:12)] + 0.5 * step_sizes$s^2 * Mmatcs + step_sizes$s * chol(grad_current$cov_s) %*% eps_s)
     proposedScomps<- proposedScomps - mean(proposedScomps)
 
-    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=current_r, s=proposedScomps, u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=current_r, s=proposedScomps, u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     Mmatps<- as.numeric(grad_proposed$cov_s %*% grad_proposed$grad_s)
@@ -646,7 +671,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
     proposedRcomps <- as.numeric(current_r + 0.5 * step_sizes$r^2 * Mmatrc + step_sizes$r * chol(grad_current$cov_r) %*% eps_r)
     proposedRcomps<- proposedRcomps - mean(proposedRcomps)
 
-    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=proposedRcomps, s=MC_chain[i, num_Gammas+3+time+(1:12)], u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=proposedRcomps, s=MC_chain[i, num_Gammas+3+time+(1:12)], u=current_u, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     Mmatrp<- as.numeric(grad_proposed$cov_r %*% grad_proposed$grad_r)
@@ -674,7 +699,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
     proposedUcomps <- as.numeric(MC_chain[i-1, num_Gammas+3+time+12+(1:ndept)] + 0.5 * step_sizes$u^2 * grad_current$grad_u + step_sizes$u * eps_u)
     proposedUcomps<- proposedUcomps - mean(proposedUcomps)
 
-    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=proposedUcomps, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+    Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=proposedUcomps, jointTPM=JointTPM, B=MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
     grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
     likelihoodproposed<- Allquantities$loglike
@@ -703,7 +728,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
       priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
-      Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedB, Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+      Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedB, Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
       grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
       likelihoodproposed<- Allquantities$loglike
@@ -721,6 +746,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
+      sdBs<- sdBs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
 
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -734,7 +760,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
-        Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+        Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
         grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
         likelihoodproposed<- Allquantities$loglike
@@ -753,6 +779,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
         else{
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }
+        sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype %in% c(3,4)){
         #Transition probabilities update
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -770,7 +797,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }else{
 
-          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -790,6 +817,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
         }
+        sdGs<- sdGs * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
 
         #Factor loadings update
         proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
@@ -807,7 +835,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
         }else{
 
-          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -827,6 +855,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
         }
+        sdLambdas<- sdLambdas * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -847,12 +876,12 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
         if(any(!is.finite(JointTPM1))){
-          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)]
+          MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }else{
-          JointTPM1 <- JointTPM1 / rowSums(JointTPM1)
+          #JointTPM1 <- JointTPM1 / rowSums(JointTPM1)
 
-          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1)
+          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
           likelihoodproposed<- Allquantities$loglike
@@ -879,6 +908,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
         }
+        sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
+        sdCop<- sdCop * exp((2/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype==7){
 
         for(n in 1:nstate){
@@ -893,10 +924,10 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           priorproposedGs<- log(gtools::ddirichlet(JointTPM[n, ], rep(1, nstate)))
 
           if(n == nstate){
-            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1)
+            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1, y_total=y_total)
             grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
           }else{
-            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0)
+            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0, y_total=y_total)
           }
 
           likelihoodproposed<- Allquantities$loglike

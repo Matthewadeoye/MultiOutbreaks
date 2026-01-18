@@ -709,9 +709,56 @@ arma::vec replace_naVec_with_zero(arma::vec X){
 }
 
 // [[Rcpp::export]]
+double add_untypedPoissonLoglikelihood(arma::cube y, arma::cube allPoisMean, arma::mat y_total){
+  int ndept = y_total.n_rows;
+  int time = y_total.n_cols;
+  double singlePoissonLoglikelihood = 0;
+  arma::mat y_strain1 = y.slice(0);
+  for(int i = 0; i < ndept; ++i){
+    for (int t = 0; t < time; ++t){
+      if(arma::is_finite(y_total(i,t)) && !arma::is_finite(y_strain1(i,t))){
+        double sumRisks = arma::accu(allPoisMean.tube(i, t));
+        sumRisks = std::max(sumRisks, 1e-12);
+        singlePoissonLoglikelihood += y_total(i, t) * log(sumRisks) - sumRisks - lgamma(y_total(i, t) + 1);
+      }
+    }
+  }
+  return singlePoissonLoglikelihood;
+}
+
+// [[Rcpp::export]]
+arma::mat add_untyped_delta(arma::cube y, arma::cube allPoisMean, arma::mat y_total, arma::mat delta){
+  int ndept = y_total.n_rows;
+  int time = y_total.n_cols;
+  arma::mat newDelta = delta;
+  arma::mat y_strain1 = y.slice(0);
+  for(int i = 0; i < ndept; ++i){
+    for (int t = 0; t < time; ++t){
+      if(arma::is_finite(y_total(i,t)) && !arma::is_finite(y_strain1(i,t))){
+        double sumRisks = arma::accu(allPoisMean.tube(i, t));
+        sumRisks = std::max(sumRisks, 1e-12);
+        newDelta(i, t) = y_total(i, t) - sumRisks;
+      }
+    }
+  }
+  return newDelta;
+}
+
+// [[Rcpp::export]]
+double add_untyped_logemission(arma::vec y_vec, arma::vec lambda_vec, double y_totalscalar){
+  double untypedlogEmission = 0;
+  if(arma::is_finite(y_totalscalar) && !arma::is_finite(y_vec[0])){
+    double sumRisks = arma::accu(lambda_vec);
+    sumRisks = std::max(sumRisks, 1e-12);
+    untypedlogEmission = y_totalscalar * log(sumRisks) - sumRisks - lgamma(y_totalscalar + 1);
+  }
+  return untypedlogEmission;
+}
+
+// [[Rcpp::export]]
 List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s,
                                               arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k,
-                                              int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients){
+                                              int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total){
 
   int ndept = e_it.n_rows;
   int time = e_it.n_cols;
@@ -755,6 +802,9 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       tempPoisDensity = replace_naMat_with_zero(tempPoisDensity);
       loglike += arma::accu(tempPoisDensity);
     }
+
+    loglike += add_untypedPoissonLoglikelihood(y, allPoisMean, y_total);
+    delta = add_untyped_delta(y, allPoisMean, y_total, delta);
 
     // Temporal trend r gradients
     arma::vec grad_r = arma::sum(delta, 0).t() - Q_r * r;
@@ -833,6 +883,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
         //forward pass
@@ -866,6 +917,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
         //forward pass
@@ -919,6 +971,8 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
         poisMean4GibbsUpdate[k] = arma::accu(currentE_lambda2);
       }
 
+      delta = add_untyped_delta(y, E_lambda_itk, y_total, delta);
+
       // Temporal trend r gradients
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
       arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
@@ -958,7 +1012,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 // [[Rcpp::export]]
 List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s,
                                          arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k,
-                                         int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients){
+                                         int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total){
 
   int ndept = e_it.n_rows;
   int time = e_it.n_cols;
@@ -1003,6 +1057,9 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       tempPoisDensity = replace_naMat_with_zero(tempPoisDensity);
       loglike += arma::accu(tempPoisDensity);
     }
+
+    loglike += add_untypedPoissonLoglikelihood(y, allPoisMean, y_total);
+    delta = add_untyped_delta(y, allPoisMean, y_total, delta);
 
     // Temporal trend r gradients
     arma::vec grad_r = arma::sum(delta, 0).t() - Q_r * r;
@@ -1081,8 +1138,10 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
+
         //forward filtering
         arma::mat logalpha(time, nstate, arma::fill::zeros);
 
@@ -1112,6 +1171,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
         //forward filtering
@@ -1163,6 +1223,8 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
         poisMean += currentActual_lambda;
         poisMean4GibbsUpdate[k] = arma::accu(currentActual_lambda2);
       }
+
+      delta = add_untyped_delta(y, Actual_lambda_itk, y_total, delta);
 
       // Temporal trend r gradients
       grad_r = arma::sum(delta, 0).t() - Q_r * r;

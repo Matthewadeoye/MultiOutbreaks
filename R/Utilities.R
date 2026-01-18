@@ -1,3 +1,8 @@
+sim_adjmat <- matrix(0, nrow = 9, ncol = 9)
+uppertriang <- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE) <- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE) <- uppertriang
+
 encodeBits<- function(K){
   S <- 2^K
   bits<- matrix(0, nrow = S, ncol = K)

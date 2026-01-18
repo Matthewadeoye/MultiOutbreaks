@@ -298,9 +298,49 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// add_untypedPoissonLoglikelihood
+double add_untypedPoissonLoglikelihood(arma::cube y, arma::cube allPoisMean, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_add_untypedPoissonLoglikelihood(SEXP ySEXP, SEXP allPoisMeanSEXP, SEXP y_totalSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type allPoisMean(allPoisMeanSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_untypedPoissonLoglikelihood(y, allPoisMean, y_total));
+    return rcpp_result_gen;
+END_RCPP
+}
+// add_untyped_delta
+arma::mat add_untyped_delta(arma::cube y, arma::cube allPoisMean, arma::mat y_total, arma::mat delta);
+RcppExport SEXP _MultiOutbreaks_add_untyped_delta(SEXP ySEXP, SEXP allPoisMeanSEXP, SEXP y_totalSEXP, SEXP deltaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type allPoisMean(allPoisMeanSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type delta(deltaSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_untyped_delta(y, allPoisMean, y_total, delta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// add_untyped_logemission
+double add_untyped_logemission(arma::vec y_vec, arma::vec lambda_vec, double y_totalscalar);
+RcppExport SEXP _MultiOutbreaks_add_untyped_logemission(SEXP y_vecSEXP, SEXP lambda_vecSEXP, SEXP y_totalscalarSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type y_vec(y_vecSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lambda_vec(lambda_vecSEXP);
+    Rcpp::traits::input_parameter< double >::type y_totalscalar(y_totalscalarSEXP);
+    rcpp_result_gen = Rcpp::wrap(add_untyped_logemission(y_vec, lambda_vec, y_totalscalar));
+    return rcpp_result_gen;
+END_RCPP
+}
 // SMOOTHINGgradmultstrainLoglikelihood_cpp
-List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients);
-RcppExport SEXP _MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP) {
+List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP y_totalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -319,13 +359,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Q_s(Q_sSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Q_u(Q_uSEXP);
     Rcpp::traits::input_parameter< int >::type gradients(gradientsSEXP);
-    rcpp_result_gen = Rcpp::wrap(SMOOTHINGgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients));
+    Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
+    rcpp_result_gen = Rcpp::wrap(SMOOTHINGgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total));
     return rcpp_result_gen;
 END_RCPP
 }
 // FFBSgradmultstrainLoglikelihood_cpp
-List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients);
-RcppExport SEXP _MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP) {
+List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP y_totalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -344,7 +385,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Q_s(Q_sSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Q_u(Q_uSEXP);
     Rcpp::traits::input_parameter< int >::type gradients(gradientsSEXP);
-    rcpp_result_gen = Rcpp::wrap(FFBSgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients));
+    Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
+    rcpp_result_gen = Rcpp::wrap(FFBSgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -393,8 +435,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_perstrain_cpp", (DL_FUNC) &_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_perstrain_cpp, 3},
     {"_MultiOutbreaks_replace_naMat_with_zero", (DL_FUNC) &_MultiOutbreaks_replace_naMat_with_zero, 1},
     {"_MultiOutbreaks_replace_naVec_with_zero", (DL_FUNC) &_MultiOutbreaks_replace_naVec_with_zero, 1},
-    {"_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp, 15},
-    {"_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp, 15},
+    {"_MultiOutbreaks_add_untypedPoissonLoglikelihood", (DL_FUNC) &_MultiOutbreaks_add_untypedPoissonLoglikelihood, 3},
+    {"_MultiOutbreaks_add_untyped_delta", (DL_FUNC) &_MultiOutbreaks_add_untyped_delta, 4},
+    {"_MultiOutbreaks_add_untyped_logemission", (DL_FUNC) &_MultiOutbreaks_add_untyped_logemission, 3},
+    {"_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp, 16},
+    {"_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp, 16},
     {"_MultiOutbreaks_PostOutbreakProbs_cpp", (DL_FUNC) &_MultiOutbreaks_PostOutbreakProbs_cpp, 10},
     {NULL, NULL, 0}
 };

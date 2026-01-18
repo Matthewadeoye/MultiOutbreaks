@@ -2,106 +2,118 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 intPower <- function(a, b) {
-    .Call('_MultiOutbreaks_intPower', PACKAGE = 'MultiOutbreaks', a, b)
+    .Call(`_MultiOutbreaks_intPower`, a, b)
 }
 
 logSumExp_cpp2 <- function(x) {
-    .Call('_MultiOutbreaks_logSumExp_cpp2', PACKAGE = 'MultiOutbreaks', x)
+    .Call(`_MultiOutbreaks_logSumExp_cpp2`, x)
 }
 
 logVecMatMult2 <- function(logV, logM) {
-    .Call('_MultiOutbreaks_logVecMatMult2', PACKAGE = 'MultiOutbreaks', logV, logM)
+    .Call(`_MultiOutbreaks_logVecMatMult2`, logV, logM)
 }
 
 stationarydistArma_cpp <- function(Gamma) {
-    .Call('_MultiOutbreaks_stationarydistArma_cpp', PACKAGE = 'MultiOutbreaks', Gamma)
+    .Call(`_MultiOutbreaks_stationarydistArma_cpp`, Gamma)
 }
 
 randomwalk2_cpp <- function(componentR, PrecisionR) {
-    .Call('_MultiOutbreaks_randomwalk2_cpp', PACKAGE = 'MultiOutbreaks', componentR, PrecisionR)
+    .Call(`_MultiOutbreaks_randomwalk2_cpp`, componentR, PrecisionR)
 }
 
 seasonalComp2_cpp <- function(x, y, z) {
-    .Call('_MultiOutbreaks_seasonalComp2_cpp', PACKAGE = 'MultiOutbreaks', x, y, z)
+    .Call(`_MultiOutbreaks_seasonalComp2_cpp`, x, y, z)
 }
 
 logIGMRF1_cpp <- function(x, y, z, rankdef) {
-    .Call('_MultiOutbreaks_logIGMRF1_cpp', PACKAGE = 'MultiOutbreaks', x, y, z, rankdef)
+    .Call(`_MultiOutbreaks_logIGMRF1_cpp`, x, y, z, rankdef)
 }
 
 JointTransitionMatrix_arma_cpp <- function(gamma, K) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_arma_cpp', PACKAGE = 'MultiOutbreaks', gamma, K)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_arma_cpp`, gamma, K)
 }
 
 JointTransitionMatrix_per_strain_cpp2 <- function(gamma_list, K) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_per_strain_cpp2', PACKAGE = 'MultiOutbreaks', gamma_list, K)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_per_strain_cpp2`, gamma_list, K)
 }
 
 one_factor_copula_cdf_rcpp <- function(u, Lambdas, gh_x, gh_w) {
-    .Call('_MultiOutbreaks_one_factor_copula_cdf_rcpp', PACKAGE = 'MultiOutbreaks', u, Lambdas, gh_x, gh_w)
+    .Call(`_MultiOutbreaks_one_factor_copula_cdf_rcpp`, u, Lambdas, gh_x, gh_w)
 }
 
 JointTransitionMatrix_1FactorGaussiancopula_cpp <- function(gamma, K, Lambdas, gh_x, gh_w) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_1FactorGaussiancopula_cpp', PACKAGE = 'MultiOutbreaks', gamma, K, Lambdas, gh_x, gh_w)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_1FactorGaussiancopula_cpp`, gamma, K, Lambdas, gh_x, gh_w)
 }
 
 JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp <- function(gamma_list, K, Lambdas, gh_x, gh_w) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp', PACKAGE = 'MultiOutbreaks', gamma_list, K, Lambdas, gh_x, gh_w)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp`, gamma_list, K, Lambdas, gh_x, gh_w)
 }
 
 frank_cdf_cpp2 <- function(u, theta) {
-    .Call('_MultiOutbreaks_frank_cdf_cpp2', PACKAGE = 'MultiOutbreaks', u, theta)
+    .Call(`_MultiOutbreaks_frank_cdf_cpp2`, u, theta)
 }
 
 JointTransitionMatrix_Frankcopula_cpp <- function(gamma, K, copParam) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_Frankcopula_cpp', PACKAGE = 'MultiOutbreaks', gamma, K, copParam)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_Frankcopula_cpp`, gamma, K, copParam)
 }
 
 JointTransitionMatrix_Frankcopula_perstrain_cpp <- function(gamma_list, K, copParam) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_Frankcopula_perstrain_cpp', PACKAGE = 'MultiOutbreaks', gamma_list, K, copParam)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_Frankcopula_perstrain_cpp`, gamma_list, K, copParam)
 }
 
 makematrix_arma_cpp2 <- function(g12, g21) {
-    .Call('_MultiOutbreaks_makematrix_arma_cpp2', PACKAGE = 'MultiOutbreaks', g12, g21)
+    .Call(`_MultiOutbreaks_makematrix_arma_cpp2`, g12, g21)
 }
 
 BuildGamma_list_cpp <- function(Gs) {
-    .Call('_MultiOutbreaks_BuildGamma_list_cpp', PACKAGE = 'MultiOutbreaks', Gs)
+    .Call(`_MultiOutbreaks_BuildGamma_list_cpp`, Gs)
 }
 
 build_corr_from_params_cpp <- function(d, params) {
-    .Call('_MultiOutbreaks_build_corr_from_params_cpp', PACKAGE = 'MultiOutbreaks', d, params)
+    .Call(`_MultiOutbreaks_build_corr_from_params_cpp`, d, params)
 }
 
 gaussian_copula_cdf_cpp <- function(u, corrMat) {
-    .Call('_MultiOutbreaks_gaussian_copula_cdf_cpp', PACKAGE = 'MultiOutbreaks', u, corrMat)
+    .Call(`_MultiOutbreaks_gaussian_copula_cdf_cpp`, u, corrMat)
 }
 
 JointTransitionMatrix_Gaussiancopula_cpp <- function(gamma, K, copParams) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_cpp', PACKAGE = 'MultiOutbreaks', gamma, K, copParams)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_cpp`, gamma, K, copParams)
 }
 
 JointTransitionMatrix_Gaussiancopula_perstrain_cpp <- function(gamma_list, K, copParams) {
-    .Call('_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_perstrain_cpp', PACKAGE = 'MultiOutbreaks', gamma_list, K, copParams)
+    .Call(`_MultiOutbreaks_JointTransitionMatrix_Gaussiancopula_perstrain_cpp`, gamma_list, K, copParams)
 }
 
 replace_naMat_with_zero <- function(X) {
-    .Call('_MultiOutbreaks_replace_naMat_with_zero', PACKAGE = 'MultiOutbreaks', X)
+    .Call(`_MultiOutbreaks_replace_naMat_with_zero`, X)
 }
 
 replace_naVec_with_zero <- function(X) {
-    .Call('_MultiOutbreaks_replace_naVec_with_zero', PACKAGE = 'MultiOutbreaks', X)
+    .Call(`_MultiOutbreaks_replace_naVec_with_zero`, X)
 }
 
-SMOOTHINGgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients) {
-    .Call('_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp', PACKAGE = 'MultiOutbreaks', y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients)
+add_untypedPoissonLoglikelihood <- function(y, allPoisMean, y_total) {
+    .Call(`_MultiOutbreaks_add_untypedPoissonLoglikelihood`, y, allPoisMean, y_total)
 }
 
-FFBSgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients) {
-    .Call('_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp', PACKAGE = 'MultiOutbreaks', y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients)
+add_untyped_delta <- function(y, allPoisMean, y_total, delta) {
+    .Call(`_MultiOutbreaks_add_untyped_delta`, y, allPoisMean, y_total, delta)
+}
+
+add_untyped_logemission <- function(y_vec, lambda_vec, y_totalscalar) {
+    .Call(`_MultiOutbreaks_add_untyped_logemission`, y_vec, lambda_vec, y_totalscalar)
+}
+
+SMOOTHINGgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total) {
+    .Call(`_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total)
+}
+
+FFBSgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total) {
+    .Call(`_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total)
 }
 
 PostOutbreakProbs_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k) {
-    .Call('_MultiOutbreaks_PostOutbreakProbs_cpp', PACKAGE = 'MultiOutbreaks', y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k)
+    .Call(`_MultiOutbreaks_PostOutbreakProbs_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k)
 }
 

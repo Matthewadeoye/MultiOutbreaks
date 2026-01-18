@@ -17,6 +17,20 @@ sim.Seasonals<- function(Amplitude, Cycle = 1:12){
   return(s)
 }
 
+sim.GMRF <- function(n, Q, tol=1e-12){
+  Es <- eigen(Q)
+  LAMBDAS <- rev(Es$values)
+  ai <- LAMBDAS > tol
+  Vtilde <- Es$vectors[,sum(ai):1]
+
+  yij <- matrix(
+    stats::rnorm(sum(ai) * n, 0, sqrt(rep(LAMBDAS[ai], n)^-1)),
+    nrow=sum(ai),
+    ncol=n)
+
+  t(Vtilde %*% yij)
+}
+
 sim.Spatials<- function(adj.matrix, sd = 0.2){
   Q<- -1 * adj.matrix
   diag(Q)<- -rowSums(Q, na.rm = T)
