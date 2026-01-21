@@ -58,6 +58,58 @@ multitypeFig<- function(y, maxAll, Modeltype = ""){
              horiz=TRUE, bty='n', cex=5.0)
 }
 
+
+multitypeFig2 <- function(array.object, names = NULL){
+  plotlists<- list()
+  nstrain<- dim(array.object)[3]
+  maxY<- max(array.object, na.rm = T)
+  for(i in 1:nstrain){
+    spatdata <- array.object[,,i]
+
+  ts_spatdata <- as.data.frame(t(spatdata))
+  ts_spatdata$Time <- 1:ncol(spatdata)
+  if(is.null(names)){
+    colnames(ts_spatdata) <- c(paste("u", 1:(ncol(ts_spatdata) - 1), sep = ""), "Time")
+  }else{
+    colnames(ts_spatdata) <- c(names, "Time")
+  }
+  long_data <- reshape2::melt(ts_spatdata, id.vars = "Time")
+
+  library(ggplot2)
+  if(i==nstrain){
+    a <- ggplot2::ggplot(data = long_data, mapping = aes(x = Time, y = value, color = variable)) +
+      geom_line() +
+      ylim(0, maxY) +
+      labs(x = "Time [month/year]", y = "Case counts", color = "Location") +
+      guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
+      theme(axis.title.y = element_text(size = 18),
+            axis.title.x = element_text(size = 18),
+            axis.text.x = element_text(size = 16),
+            axis.text.y = element_text(size = 16),
+            legend.title = element_text(size = 18),
+            legend.text = element_text(size = 16))
+  }else{
+  a <- ggplot2::ggplot(data = long_data, mapping = aes(x = Time, y = value, color = variable)) +
+    geom_line() +
+    ylim(0, maxY) +
+    labs(x = "Time [month/year]", y = "Case counts", color = "Location") +
+    guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
+    theme(axis.title.y = element_text(size = 18),
+          axis.title.x = element_text(size = 18),
+          axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          legend.title = element_text(size = 18),
+          legend.text = element_text(size = 16),
+          legend.position = "none")
+  }
+  plotlists[[i]]<- a
+  }
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 17)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 17, rel_widths = c(1.2, 1))
+  finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
+  print(finalplot)
+}
+
 mcmc.plot<- function(inf.object, Histograms=FALSE){
   if(Histograms){
      par(mfrow=c(3, 3))
