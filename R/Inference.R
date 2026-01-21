@@ -116,6 +116,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
   grad_current <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
   deltaP<- 1
+  RMdelta<- 1/(0.234*(1-0.234))
 
   propShape<- 0.01+SumYk_vec
 
@@ -237,7 +238,12 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
       MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<-  MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       MC_chain[i, 1:2]<- MC_chain[i-1, 1:2]
     }else{
-      proposedB <- abs(rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain)))
+      #proposedB <- abs(rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain)))
+
+      proposedB <- rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain))
+      if(any(proposedB < 0)){
+        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
+      }else{
       priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
       priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
@@ -259,8 +265,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
-      sdBs<- sdBs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
-
+      sdBs<- sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+    }
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -292,6 +298,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
         else{
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }
+        sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype %in% c(3,4)){
         #Transition probabilities update
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -328,12 +335,12 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
           else{
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
+          sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
-        sdGs<- sdGs * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
 
         #Factor loadings update
         proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
-        proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
+        #proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
 
         priorcurrentLambdas<- sum(dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
         priorproposedLambdas<- sum(dunif(proposedLambdas, min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
@@ -343,7 +350,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(abs(proposedLambdas) > 1)){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
         }else{
 
@@ -366,8 +373,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
           else{
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
+          sdLambdas<- sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
-        sdLambdas<- sdLambdas * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -419,9 +426,9 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
+          sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          sdCop<- sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
         }
-        sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
-        sdCop<- sdCop * exp((2/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype==7){
 
         for(n in 1:nstate){
@@ -582,15 +589,15 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
   if(Modeltype %in% c(0,1,3,5)){
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
-    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
-    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
-    MC_chain[1,]<- c(as.numeric(t(initGs)), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    MC_chain[1,]<- c(as.numeric(t(initGs)), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
   }
 
   Q_r<- MC_chain[1,num_Gammas + 1] * RW2PrecMat
@@ -622,6 +629,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
   grad_current <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
   deltaP<- 1
+  RMdelta<- 1/(0.234*(1-0.234))
 
   for (i in 2:num_iteration) {
 
@@ -724,7 +732,14 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<-  MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       MC_chain[i, 1:2]<- MC_chain[i-1, 1:2]
     }else{
-      proposedB <- abs(rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain)))
+      #proposedB <- abs(rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain)))
+
+      proposedB <- rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain))
+
+      if(any(proposedB < 0)){
+        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
+      }else{
+
       priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
       priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
@@ -733,9 +748,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
 
       likelihoodproposed<- Allquantities$loglike
 
-      mh.ratio<- exp(likelihoodproposed + priorproposedB
-                     - likelihoodcurrent - priorcurrentB)
-
+      mh.ratio<- exp(likelihoodproposed + priorproposedB #+ proposalcurrentB
+                     - likelihoodcurrent - priorcurrentB) #- proposalproposedB
       #print(paste("mh.ratioB = ", mh.ratio))
 
       if(!is.na(mh.ratio) && runif(1) < mh.ratio){
@@ -746,8 +760,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
-      sdBs<- sdBs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
-
+      sdBs<- sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+    }
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -816,12 +830,12 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           else{
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
+          sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
-        sdGs<- sdGs * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
 
         #Factor loadings update
         proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
-        proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
+        #proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
 
         priorcurrentLambdas<- sum(dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
         priorproposedLambdas<- sum(dunif(proposedLambdas, min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
@@ -831,7 +845,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(abs(proposedLambdas) > 1)){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
         }else{
 
@@ -854,8 +868,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           else{
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
+          sdLambdas<- sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
-        sdLambdas<- sdLambdas * exp((2/i) * (min(mh.ratioGC, 1) - 0.234))
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
@@ -907,9 +921,9 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
+          sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          sdCop<- sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
         }
-        sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
-        sdCop<- sdCop * exp((2/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype==7){
 
         for(n in 1:nstate){
