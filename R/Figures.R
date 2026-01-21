@@ -67,7 +67,7 @@ multitypeFig2 <- function(array.object, names = NULL){
     spatdata <- array.object[,,i]
 
   ts_spatdata <- as.data.frame(t(spatdata))
-  ts_spatdata$Time <- 1:ncol(spatdata)
+  ts_spatdata$Time <- seq.Date(from = as.Date("2013-01-01"), to = as.Date("2019-12-01"), by = "month")
   if(is.null(names)){
     colnames(ts_spatdata) <- c(paste("u", 1:(ncol(ts_spatdata) - 1), sep = ""), "Time")
   }else{
@@ -82,9 +82,10 @@ multitypeFig2 <- function(array.object, names = NULL){
       ylim(0, maxY) +
       labs(x = "Time [month/year]", y = "Case counts", color = "Location") +
       guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
+      scale_x_date(date_labels = "%b %Y", date_breaks = "1 years") +
       theme(axis.title.y = element_text(size = 18),
             axis.title.x = element_text(size = 18),
-            axis.text.x = element_text(size = 16),
+            axis.text.x = element_text(size = 14),
             axis.text.y = element_text(size = 16),
             legend.title = element_text(size = 18),
             legend.text = element_text(size = 16))
@@ -94,9 +95,10 @@ multitypeFig2 <- function(array.object, names = NULL){
     ylim(0, maxY) +
     labs(x = "Time [month/year]", y = "Case counts", color = "Location") +
     guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
+    scale_x_date(date_labels = "%b %Y", date_breaks = "1 years") +
     theme(axis.title.y = element_text(size = 18),
           axis.title.x = element_text(size = 18),
-          axis.text.x = element_text(size = 16),
+          axis.text.x = element_text(size = 14),
           axis.text.y = element_text(size = 16),
           legend.title = element_text(size = 18),
           legend.text = element_text(size = 16),
@@ -105,9 +107,10 @@ multitypeFig2 <- function(array.object, names = NULL){
   plotlists[[i]]<- a
   }
   row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 17)
-  row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 17, rel_widths = c(1.2, 1))
+  row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 17, rel_widths = c(0.9, 1))
   finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
   print(finalplot)
+  #export ==> 23 x 9
 }
 
 mcmc.plot<- function(inf.object, Histograms=FALSE){

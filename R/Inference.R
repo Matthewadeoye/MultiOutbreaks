@@ -512,7 +512,9 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_itera
 
 
 #Inference Method 2 -- Sampling
-FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.1, y_total=NULL){
+FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration = 15000, sdBs=0.03,
+                          sdGs=0.05, sdLambdas=0.03, sdCop=0.1, y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE,
+                          RM_Cop=TRUE, RM_Lambdas=TRUE){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -748,8 +750,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
 
       likelihoodproposed<- Allquantities$loglike
 
-      mh.ratio<- exp(likelihoodproposed + priorproposedB #+ proposalcurrentB
-                     - likelihoodcurrent - priorcurrentB) #- proposalproposedB
+      mh.ratio<- exp(likelihoodproposed + priorproposedB
+                     - likelihoodcurrent - priorcurrentB)
       #print(paste("mh.ratioB = ", mh.ratio))
 
       if(!is.na(mh.ratio) && runif(1) < mh.ratio){
@@ -760,7 +762,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
-      #sdBs<- sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+      if(RM_Bs) sdBs= sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
  #   }
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -793,7 +795,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
         else{
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }
-       # sdGs<- sdGs * exp((2/i) * (min(mh.ratio, 1) - 0.234))
+        if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
       }else if(Modeltype %in% c(3,4)){
         #Transition probabilities update
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -830,7 +832,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           else{
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
-          #sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
+          if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
 
         #Factor loadings update
@@ -868,7 +870,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           else{
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
-          #sdLambdas<- sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
+          if(RM_Lambdas) sdLambdas= sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
         }
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -893,7 +895,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
           MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }else{
-          JointTPM1 <- JointTPM1 / rowSums(JointTPM1)
+          #JointTPM1 <- JointTPM1 / rowSums(JointTPM1)
 
           Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
@@ -921,8 +923,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
-          #sdGs<- sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
-          #sdCop<- sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          if(RM_Cop) sdCop= sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
         }
       }else if(Modeltype==7){
 

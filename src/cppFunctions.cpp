@@ -1058,8 +1058,8 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       loglike += arma::accu(tempPoisDensity);
     }
 
-    //loglike += add_untypedPoissonLoglikelihood(y, allPoisMean, y_total);
-    //delta = add_untyped_delta(y, allPoisMean, y_total, delta);
+    loglike += add_untypedPoissonLoglikelihood(y, allPoisMean, y_total);
+    delta = add_untyped_delta(y, allPoisMean, y_total, delta);
 
     // Temporal trend r gradients
     arma::vec grad_r = arma::sum(delta, 0).t() - Q_r * r;
@@ -1138,7 +1138,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
-            //logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
 
@@ -1171,7 +1171,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
-            //logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
         //forward filtering
@@ -1224,7 +1224,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
         poisMean4GibbsUpdate[k] = arma::accu(currentActual_lambda2);
       }
 
-      //delta = add_untyped_delta(y, Actual_lambda_itk, y_total, delta);
+      delta = add_untyped_delta(y, Actual_lambda_itk, y_total, delta);
 
       // Temporal trend r gradients
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
