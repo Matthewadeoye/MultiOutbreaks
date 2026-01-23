@@ -742,8 +742,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
 #        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
 #      }else{
 
-      priorcurrentB<- sum(dexp(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], rate = rep(1,nstrain), log=TRUE))
-      priorproposedB<- sum(dexp(proposedB, rate = rep(1, nstrain), log=TRUE))
+      priorcurrentB<- sum(dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], min = rep(0, nstrain), max = rep(3.5, nstrain), log=TRUE))
+      priorproposedB<- sum(dunif(proposedB, min = rep(0, nstrain), max = rep(3.5, nstrain), log=TRUE))
 
       #priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
       #priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
