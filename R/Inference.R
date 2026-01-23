@@ -633,9 +633,6 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
   deltaP<- 1
   RMdelta<- 1/(0.234*(1-0.234))
 
-  sdBl<- 0.05
-  RMBldelta<- 1/(0.44*(1-0.44))
-
   for (i in 2:num_iteration) {
 
     MC_chain[i,num_Gammas+1]<- rgamma(1, shape = 1 + (time-2)/2, rate = 0.0001 + (t(MC_chain[i-1, num_Gammas+3+(1:time)]) %*% RW2PrecMat %*% MC_chain[i-1, num_Gammas+3+(1:time)])/2)
@@ -737,19 +734,12 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<-  MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       MC_chain[i, 1:2]<- MC_chain[i-1, 1:2]
     }else{
-      proposedB <- abs(rnorm(nstrain-1, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:(nstrain-1))], sd = rep(sdBs, nstrain-1)))
+      proposedB <- abs(rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain)))
 
-     # proposedB <- rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain))
+      priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
+      priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
- #     if(any(proposedB < 0)){
-#        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
-#      }else{
-
-      priorcurrentB<- sum(dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:(nstrain-1))], shape = rep(2, nstrain-1), rate = rep(2,nstrain-1), log=TRUE))
-      priorproposedB<- sum(dgamma(proposedB, shape = rep(2, nstrain-1), rate = rep(2, nstrain-1), log=TRUE))
-
-
-      Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=c(proposedB, MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain]), Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
+      Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedB, Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
       grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
       likelihoodproposed<- Allquantities$loglike
@@ -759,47 +749,14 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
       #print(paste("mh.ratioB = ", mh.ratio))
 
       if(!is.na(mh.ratio) && runif(1) < mh.ratio){
-        MC_chain[i, num_Gammas+3+time+12+ndept+(1:(nstrain-1))]<- proposedB
+        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedB
         likelihoodcurrent<- likelihoodproposed
         grad_current<- grad_proposed
       }
       else{
-        MC_chain[i, num_Gammas+3+time+12+ndept+(1:(nstrain-1))]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:(nstrain-1))]
+        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
       if(RM_Bs) sdBs= sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
- #   }
-
-      proposedB <- abs(rnorm(1, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain], sd = sdBl))
-
-      # proposedB <- rnorm(nstrain, mean = MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)], sd = rep(sdBs, nstrain))
-
-      #     if(any(proposedB < 0)){
-      #        MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
-      #      }else{
-
-      priorcurrentB<- dgamma(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain], shape = 2, rate = 2, log=TRUE)
-      priorproposedB<- dgamma(proposedB, shape = 2, rate = 2, log=TRUE)
-
-
-      Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=c(MC_chain[i, num_Gammas+3+time+12+ndept+(1:(nstrain-1))], proposedB), Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
-      grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
-
-      likelihoodproposed<- Allquantities$loglike
-
-      mh.ratio<- exp(likelihoodproposed + priorproposedB
-                     - likelihoodcurrent - priorcurrentB)
-      #print(paste("mh.ratioB = ", mh.ratio))
-
-      if(!is.na(mh.ratio) && runif(1) < mh.ratio){
-        MC_chain[i, num_Gammas+3+time+12+ndept+nstrain]<- proposedB
-        likelihoodcurrent<- likelihoodproposed
-        grad_current<- grad_proposed
-      }
-      else{
-        MC_chain[i, num_Gammas+3+time+12+ndept+nstrain]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain]
-      }
-      if(RM_Bs) sdBl= sdBl * exp((RMBldelta/i) * (min(mh.ratio, 1) - 0.44))
-      #   }
 
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
