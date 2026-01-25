@@ -831,7 +831,11 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
 
         #Factor loadings update
         proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
-        proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
+        #proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
+
+        if(any(abs(proposedLambdas) > 1)){
+          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+        }else{
 
         priorcurrentLambdas<- sum(dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
         priorproposedLambdas<- sum(dunif(proposedLambdas, min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
@@ -865,6 +869,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes, num_iteration 
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
           if(RM_Lambdas) sdLambdas= sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
+          }
         }
       }else if(Modeltype %in% c(5,6)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))

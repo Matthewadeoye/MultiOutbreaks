@@ -177,3 +177,45 @@ crudeEst<- function(y, e_it){
   }
   return(list(crudeR, crudeS, crudeU))
 }
+
+
+
+#Datasets for application (Meningococcal)
+#popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
+#names(popn2010)<- NULL
+#popn2010<- popn2010[ , -1]
+#popn2010<- as.matrix(popn2010)
+#popn2010<- DetectOutbreaks:::LinearInterp(popn2010)
+#dim(popn2010)
+#cleanedMultitypeData<- read.csv("C:/Users/Matthew Adeoye/Downloads/newdata5strains.csv")
+#cleanedMultitypeData$Value<- as.numeric(cleanedMultitypeData$Value)
+#ApplicationCounts<- read.csv("C:/Users/Matthew Adeoye/Downloads/updatedcases2.csv")
+#ApplicationCounts$NumValue<- as.numeric(ApplicationCounts$NumValue)
+#ApplicationCounts<- matrix(ApplicationCounts$NumValue, nrow = 28, byrow = T)
+#MultitypeData<- array(NA, dim=c(28,120,4))
+#countries= cleanedMultitypeData$RegionName
+#dates= cleanedMultitypeData$Time
+#countries=sort(countries,decreasing = T)
+#dates=unique(dates)
+
+#for(t in 1:120){
+#  for(i in 1:28){
+#    for(k in 1:4){
+#      w=which(cleanedMultitypeData$Time==dates[t] & cleanedMultitypeData$RegionName==countries[i] & cleanedMultitypeData$CategoryIndex==as.character(k))
+#      if(length(w)==1) MultitypeData[i, t, k]<- cleanedMultitypeData$Value[w]
+#    }
+#  }
+#}
+#MultitypeData<- MultitypeData/100
+
+#for(i in 1:28){
+#  for(t in 1:120){
+#    if(is.finite(ApplicationCounts[i, t]) && ApplicationCounts[i, t] == 0){
+#      MultitypeData[i,t,] <- 0
+#    }
+#    for(k in 1:4){
+#      MultitypeData[i,t,k]<- MultitypeData[i,t,k] * ApplicationCounts[i, t]
+#    }
+#  }
+#}
+#MultitypeData<- round(MultitypeData)
