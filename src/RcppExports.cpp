@@ -391,8 +391,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // PostOutbreakProbs_cpp
-arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k);
-RcppExport SEXP _MultiOutbreaks_PostOutbreakProbs_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP) {
+arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_PostOutbreakProbs_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP y_totalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -406,7 +406,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type B(BSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Bits(BitsSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type a_k(a_kSEXP);
-    rcpp_result_gen = Rcpp::wrap(PostOutbreakProbs_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k));
+    Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
+    rcpp_result_gen = Rcpp::wrap(PostOutbreakProbs_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, y_total));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -440,7 +441,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_MultiOutbreaks_add_untyped_logemission", (DL_FUNC) &_MultiOutbreaks_add_untyped_logemission, 3},
     {"_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp, 16},
     {"_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp, 16},
-    {"_MultiOutbreaks_PostOutbreakProbs_cpp", (DL_FUNC) &_MultiOutbreaks_PostOutbreakProbs_cpp, 10},
+    {"_MultiOutbreaks_PostOutbreakProbs_cpp", (DL_FUNC) &_MultiOutbreaks_PostOutbreakProbs_cpp, 11},
     {NULL, NULL, 0}
 };
 

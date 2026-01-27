@@ -113,7 +113,7 @@ FFBSgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, joint
     .Call(`_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total)
 }
 
-PostOutbreakProbs_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k) {
-    .Call(`_MultiOutbreaks_PostOutbreakProbs_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k)
+PostOutbreakProbs_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, y_total) {
+    .Call(`_MultiOutbreaks_PostOutbreakProbs_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, y_total)
 }
 

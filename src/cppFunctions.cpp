@@ -1264,7 +1264,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
 // [[Rcpp::export]]
 arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s,
                                               arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits,
-                                              arma::vec a_k){
+                                              arma::vec a_k, arma::mat y_total){
 
   int ndept = e_it.n_rows;
   int time = e_it.n_cols;
@@ -1298,6 +1298,7 @@ arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
+            logEmissions(t, n) += add_untyped_logemission(y_vec, lambda_vec, y_total(i, t));
           }
         }
         //forward pass

@@ -52,7 +52,7 @@ simulateMarkovChain<- function(nstep, TPM){
   return(states)
 }
 
-simulateMultiModel<- function(Model, time, nstrain=2, adj.matrix, Modeltype=0, copulaParam=c(-0.8,0.8,-0.6),
+simulateMultiModel<- function(Modeltype, time, nstrain, adj.matrix, copulaParam,
                               e_it=matrix(c(rep(c(rpois(time, 500000), rpois(time, 1000000)), 4), rpois(time, 500000)),
                                           byrow = T, ncol = time),
                               B = runif(nstrain), T.prob = matrix(c(0.9, 0.1, 0.2, 0.8), nrow = 2, byrow = T),
@@ -71,6 +71,7 @@ simulateMultiModel<- function(Model, time, nstrain=2, adj.matrix, Modeltype=0, c
   #Due to lazyloading
   r<- r;  s<- s;  u<- u;  e_it<- e_it;  B<- B
 
+  Model<- ifelse(Modeltype>0,1,0)
 
   if(Modeltype == 1){
     copulaParam<- 0

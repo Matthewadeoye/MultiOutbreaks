@@ -55,12 +55,23 @@ Multipurpose_JointTransitionMatrix2<- function(gammas, K, Lambdas, Modeltype, gh
   return(JointTPM)
 }
 
-Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, thinningL=1000, burn.in=1000){
+Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, y_total=NULL,
+                                        thinningL=1000, burn.in=1000){
   ndept<- dim(y)[1]
   time<- dim(y)[2]
   nstrain<- dim(y)[3]
   nstate<- 2^nstrain
   Bits<- encodeBits(K=nstrain)
+
+  if(is.null(y_total)){
+    sumY1<- y[,,1]
+    for(k in 2:nstrain){
+      sumY1<- sumY1 + y[,,1]
+    }
+    y_total<- sumY1
+  }else{
+    y_total<- y_total
+  }
 
   fullG.draws <- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "G")]
   fullr.draws<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "r")]
@@ -128,7 +139,7 @@ Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, thinning
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
     }
 
-    P_itn <- PostOutbreakProbs_cpp(y = y, e_it = e_it, nstrain=nstrain, r = r, s = s, u = u, jointTPM = JointTPM, B = B, Bits = Bits, a_k = a_k)
+    P_itn <- PostOutbreakProbs_cpp(y = y, e_it = e_it, nstrain=nstrain, r = r, s = s, u = u, jointTPM = JointTPM, B = B, Bits = Bits, a_k = a_k, y_total = y_total)
     sum_P_itn<- sum_P_itn + P_itn
   }
   sum_P_itn<- sum_P_itn/length(thinning)
@@ -178,7 +189,29 @@ crudeEst<- function(y, e_it){
   return(list(crudeR, crudeS, crudeU))
 }
 
+#Extract posterior credible interval
+posterior_interval_custom <- function(posterior_samples, prob = 0.95) {
 
+  lower <- (1 - prob) / 2
+  upper <- 1 - lower
+
+  # Apply quantile function across columns
+  credible_intervals <- apply(posterior_samples, 2, quantile, probs = c(lower, upper))
+
+  credible_intervals_df <- as.data.frame(t(credible_intervals))
+  colnames(credible_intervals_df) <- c("2.5%", "97.5%")
+
+  return(credible_intervals_df)
+}
+
+#custom legend
+add_legend <- function(...) {
+  opar <- par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0),
+              mar=c(0, 0, 0, 0), new=TRUE)
+  on.exit(par(opar))
+  plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+  legend(...)
+}
 
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")

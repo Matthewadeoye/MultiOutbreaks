@@ -67,7 +67,7 @@ multitypeFig2 <- function(array.object, names = NULL){
     spatdata <- array.object[,,i]
 
   ts_spatdata <- as.data.frame(t(spatdata))
-  ts_spatdata$Time <- seq.Date(from = as.Date("2013-01-01"), to = as.Date("2019-12-01"), by = "month")
+  ts_spatdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
   if(is.null(names)){
     colnames(ts_spatdata) <- c(paste("u", 1:(ncol(ts_spatdata) - 1), sep = ""), "Time")
   }else{
@@ -106,8 +106,8 @@ multitypeFig2 <- function(array.object, names = NULL){
   }
   plotlists[[i]]<- a
   }
-  row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 17)
-  row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 17, rel_widths = c(0.9, 1))
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:2], ncol = 2, labels = c("A", "B"), label_size = 17)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[3], ncol = 2, labels = c("C"), label_size = 17, rel_widths = c(1.7, 1))
   finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
   print(finalplot)
   #export ==> 23 x 9
@@ -125,6 +125,33 @@ mcmc.plot<- function(inf.object, Histograms=FALSE){
       plot(inf.object[, i], type = "l", main = colnames(inf.object)[i], xlab ="MCMC iterations", ylab = "", col = "purple")
       grid()
     }
+}
+
+inf.plot<- function(inf.object){
+
+    rPosterior<- inf.object[, startsWith(colnames(inf.object), "r")]
+    sPosterior<- inf.object[, startsWith(colnames(inf.object), "s")]
+    inf.r<- colMeans(rPosterior)
+    inf.s<- colMeans(sPosterior)
+    uCI.r<- posterior_interval_custom(as.matrix.data.frame(rPosterior))[,2]
+    lCI.r<- posterior_interval_custom(as.matrix.data.frame(rPosterior))[,1]
+    uCI.s<- posterior_interval_custom(as.matrix.data.frame(sPosterior))[,2]
+    lCI.s<- posterior_interval_custom(as.matrix.data.frame(sPosterior))[,1]
+
+  par(mfrow=c(1,2))
+  plot(0, type = "n", xlim = c(1,length(inf.r)), ylim = c(min(lCI.r, inf.r), max(uCI.r, inf.r)), ylab = "Trend component", xlab = "Time")
+  polygon(c(1:length(inf.r), rev(1:length(inf.r))), c(lCI.r, rev(uCI.r)),
+          col = "pink", border = NA)
+  lines(1:length(inf.r), inf.r, col="red")
+  grid()
+
+  plot(0, type = "n", xlim = c(1,length(inf.s)), ylim = c(min(lCI.s, inf.s), max(uCI.s, inf.s)), ylab = "Seasonal component", xlab = "Season")
+  polygon(c(1:length(inf.s), rev(1:length(inf.s))), c(lCI.s, rev(uCI.s)),
+          col = "pink", border = NA)
+  lines(1:length(inf.s), inf.s, col="red")
+  grid()
+  add_legend("topright", legend="Posterior means", lty=1, col="red",
+             horiz=TRUE, bty='n', cex=1.1)
 }
 
 RecoverInf.plot<- function(inf.object, true_r, true_s, Modeltype=""){
@@ -917,4 +944,59 @@ RecoverInfUABGcop.plotGauss <- function(inf.object, true_u, true_a_k, true_B, tr
   #             horiz = TRUE, bty = 'n', cex = 1.8)
   #  add_legend("topleft", legend = substitute(paste(bold(Modeltype))),
   #             horiz = TRUE, bty = 'n', cex = 1.5)
+}
+
+Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
+  rmat<- matrix(NA, nrow = 8, ncol = time)
+  smat<- matrix(NA, nrow = 8, ncol = 12)
+  for(i in 1:8){
+    inf.object<- all.infobjects[[i]]
+    Model<- i
+
+    if(!is.data.frame(inf.object)){
+      r.draws<- colMeans(as.data.frame(inf.object$draws(variables = "r")[,1,]))
+      s.draws<- colMeans(as.data.frame(inf.object$draws(variables = "s")[,1,]))
+    }else{
+      r.draws<- colMeans(inf.object[-(1:burn.in), startsWith(colnames(inf.object), "r")])
+      s.draws<- colMeans(inf.object[-(1:burn.in), startsWith(colnames(inf.object), "s")])
+    }
+    rmat[i, ]<- r.draws
+    smat[i, ]<- s.draws
+  }
+  r_names<- c("0", "I", "II", "III", "IV", "V", "VI", "VII")
+  ts_rdata <- as.data.frame(t(rmat))
+  ts_sdata <- as.data.frame(t(smat))
+  ts_rdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
+  ts_sdata$Time <- seq.Date(from = as.Date("2019-01-01"), to = as.Date("2019-12-01"), by = "month")
+
+  colnames(ts_rdata) <- c(r_names, "Time")
+  colnames(ts_sdata) <- c(r_names, "Time")
+
+  long_data <- reshape2::melt(ts_rdata, id.vars = "Time")
+  library(ggplot2)
+  a<- (ggplot2::ggplot(data = long_data, mapping = aes(x = Time, y = value, color = variable)) +
+         geom_line() +
+         labs(x = "Time [month/year]", y = "Trend component", color = "Model") +
+         scale_x_date(date_labels = "%b %Y", date_breaks = "1 years")+
+         theme(axis.title.y = element_text(size=18),
+               axis.title.x = element_text(size=18),
+               axis.text.x = element_text(size=16),
+               axis.text.y = element_text(size=16),
+               legend.title = element_text(size = 18),
+               legend.text = element_text(size = 16), legend.position = "none"))
+
+  long_data2 <- reshape2::melt(ts_sdata, id.vars = "Time")
+  library(ggplot2)
+  b<- (ggplot2::ggplot(data = long_data2, mapping = aes(x = Time, y = value, color = variable)) +
+         geom_line() +
+         labs(x = "Time [month]", y = "Seasonal component", color = "Model") +
+         scale_x_date(date_labels = "%b", date_breaks = "1 months") +
+         theme(axis.title.y = element_text(size=18),
+               axis.title.x = element_text(size=18),
+               axis.text.x = element_text(size=16),
+               axis.text.y = element_text(size=16),
+               legend.title = element_text(size = 18),
+               legend.text = element_text(size = 16)))
+  plotlists<- list(a, b)
+  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("A", "B"), label_size = 17, rel_widths = c(1.08, 1.15)))
 }
