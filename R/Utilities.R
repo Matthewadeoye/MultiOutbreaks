@@ -226,15 +226,17 @@ add_legend <- function(...) {
 #ApplicationCounts$NumValue<- as.numeric(ApplicationCounts$NumValue)
 #ApplicationCounts<- matrix(ApplicationCounts$NumValue, nrow = 28, byrow = T)
 #MultitypeData<- array(NA, dim=c(28,120,4))
-#countries= cleanedMultitypeData$RegionName
 #dates= cleanedMultitypeData$Time
-#countries=sort(countries,decreasing = T)
+#countries <- sort(unique(cleanedMultitypeData$RegionName), decreasing = FALSE)
 #dates=unique(dates)
+#cleanedMultitypeData<- read.csv("C:/Users/Matthew Adeoye/Downloads/serogroups.csv")
+#cleanedMultitypeData$Value<- as.numeric(cleanedMultitypeData$Value)
+#strains<- c("NEIMENI_B", "NEIMENI_W", "NEIMENI_Y", "NEIMENI_C")
 
 #for(t in 1:120){
 #  for(i in 1:28){
 #    for(k in 1:4){
-#      w=which(cleanedMultitypeData$Time==dates[t] & cleanedMultitypeData$RegionName==countries[i] & cleanedMultitypeData$CategoryIndex==as.character(k))
+#      w=which(cleanedMultitypeData$Time==dates[t] & cleanedMultitypeData$RegionName==countries[i] & cleanedMultitypeData$Category==strains[k])
 #      if(length(w)==1) MultitypeData[i, t, k]<- cleanedMultitypeData$Value[w]
 #    }
 #  }

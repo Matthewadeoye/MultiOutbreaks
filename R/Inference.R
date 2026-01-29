@@ -651,7 +651,9 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
   grad_current <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
 
   deltaP<- 1
-  RMdelta<- 1/(0.234*(1-0.234))
+  RMdelta<- 1/(0.234*(1-0.234))  #for Betas, Gammas
+  RMLdelta<- 1/(0.44*(1-0.44))   #for factor_loadings
+  sdLambdas<- rep(sdLambdas, nstrain)
 
   for (i in 2:num_iteration) {
 
@@ -850,45 +852,51 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         }
 
         #Factor loadings update
-        proposedLambdas<- rnorm(nstrain,mean=MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd=rep(sdLambdas, nstrain))
-        #proposedLambdas<- ifelse(proposedLambdas<1, proposedLambdas, 2-proposedLambdas)
+        for(l in 1:n_factloadings){
+        LAMBDAS<- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+        LAMBDAS[l]<- rnorm(1,mean=LAMBDAS[l], sd=sdLambdas[l])
 
-        if(any(abs(proposedLambdas) > 1)){
-          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+        if(abs(LAMBDAS[l]) > 1){
+          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
         }else{
 
-        priorcurrentLambdas<- sum(dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
-        priorproposedLambdas<- sum(dunif(proposedLambdas, min = rep(-1, n_factloadings), max = rep(1, n_factloadings), log=TRUE))
+        priorcurrentLambda<- dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l], min = -1, max = 1, log=TRUE)
+        priorproposedLambda<- dunif(LAMBDAS[l], min = -1, max = 1, log=TRUE)
 
-        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, proposedLambdas, Modeltype, gh)
+        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS, Modeltype, gh)
 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
         if(any(!is.finite(JointTPM1))){
-          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
         }else{
 
-          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
-          grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
+          if(l == n_factloadings){
+            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
+            grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s)
+          }else{
+            Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0, y_total=y_total)
+          }
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioGC<- exp(likelihoodproposed + priorproposedLambdas
-                           - likelihoodcurrent - priorcurrentLambdas)
+          mh.ratioL<- exp(likelihoodproposed + priorproposedLambda
+                           - likelihoodcurrent - priorcurrentLambda)
 
           #print(mh.ratioGC)
 
-          if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
-            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- proposedLambdas
+          if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS[l]
             likelihoodcurrent<- likelihoodproposed
-            grad_current<- grad_proposed
+            if(l == n_factloadings) grad_current = grad_proposed
             JointTPM<- JointTPM1
           }
           else{
-            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
           }
-          if(RM_Lambdas) sdLambdas= sdLambdas * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
+          if(RM_Lambdas) sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))
+            }
           }
         }
       }else if(Modeltype %in% c(5,6)){
