@@ -106,8 +106,8 @@ multitypeFig2 <- function(array.object, names = NULL){
   }
   plotlists[[i]]<- a
   }
-  row_1<- cowplot::plot_grid(plotlist = plotlists[1:2], ncol = 2, labels = c("A", "B"), label_size = 17)
-  row_2<- cowplot::plot_grid(plotlist = plotlists[3], ncol = 2, labels = c("C"), label_size = 17, rel_widths = c(1.7, 1))
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 17)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 17, rel_widths = c(0.8, 1))
   finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
   print(finalplot)
   #export ==> 23 x 9

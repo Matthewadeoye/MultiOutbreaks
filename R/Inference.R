@@ -533,7 +533,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
 #Inference Method 2 -- Sampling
 FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,"s"=0.3,"u"=0.025),
-                          num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.1,
+                          num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.001,
                           y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE, RM_Cop=TRUE, RM_Lambdas=TRUE){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
@@ -778,7 +778,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
       else{
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+(1:nstrain)]
       }
-      if(RM_Bs) sdBs= sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+      if(RM_Bs) {sdBs= sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
 
       if(Modeltype %in% c(1,2)){
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -811,7 +811,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         else{
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
         }
-        if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+        if(RM_Gs) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
       }else if(Modeltype %in% c(3,4)){
         #Transition probabilities update
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
@@ -827,6 +827,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
 
         if(any(!is.finite(JointTPM1))){
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
+          if(RM_Gs) {sdGs= sdGs * exp((RMdelta/i) * (0 - 0.234))}
         }else{
 
           Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
@@ -848,28 +849,33 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           else{
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
-          if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))
+          if(RM_Gs) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
         }
 
         #Factor loadings update
-        for(l in 1:n_factloadings){
         LAMBDAS<- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
-        LAMBDAS[l]<- rnorm(1,mean=LAMBDAS[l], sd=sdLambdas[l])
 
-        if(abs(LAMBDAS[l]) > 1){
+        for(l in 1:n_factloadings){
+
+        LAMBDAS_prop <- LAMBDAS
+        LAMBDAS_prop[l] <- rnorm(1, mean = LAMBDAS[l], sd = sdLambdas[l])
+
+        if(abs(LAMBDAS_prop[l]) > 1){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+          LAMBDAS[l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
         }else{
 
         priorcurrentLambda<- dunif(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l], min = -1, max = 1, log=TRUE)
-        priorproposedLambda<- dunif(LAMBDAS[l], min = -1, max = 1, log=TRUE)
+        priorproposedLambda<- dunif(LAMBDAS_prop[l], min = -1, max = 1, log=TRUE)
 
-        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS, Modeltype, gh)
+        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
         if(any(!is.finite(JointTPM1))){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+          if(RM_Lambdas) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (0 - 0.44))}
         }else{
 
           if(l == n_factloadings){
@@ -887,15 +893,17 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           #print(mh.ratioGC)
 
           if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
-            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS[l]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
+            LAMBDAS[l]<- LAMBDAS_prop[l]
             likelihoodcurrent<- likelihoodproposed
-            if(l == n_factloadings) grad_current = grad_proposed
+            if(l == n_factloadings) {grad_current = grad_proposed}
             JointTPM<- JointTPM1
           }
           else{
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+            LAMBDAS[l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
           }
-          if(RM_Lambdas) sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))
+          if(RM_Lambdas) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))}
             }
           }
         }
@@ -912,6 +920,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
         if(any(!is.finite(JointTPM1))){
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
+          if(RM_Gs) {sdGs= sdGs * exp((RMdelta/i) * (0 - 0.234))}
         }else{
 
           Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
@@ -931,20 +940,23 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           else{
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
-          if(RM_Gs) sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          if(RM_Gs) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
         }
 
-        if(nstrain==2){
-          proposedcopPs<- rnorm(1,mean=MC_chain[i-1, ncol(MC_chain)], sd=sdCop)
+        proposedcopPs<- rnorm(1,mean=MC_chain[i-1, ncol(MC_chain)], sd=sdCop)
+
+        if(nstrain != 2 && proposedcopPs < 0){
+          MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
+          if(RM_Cop) {sdCop= sdCop * exp((RMdelta/i) * (0 - 0.234))}
         }else{
-          proposedcopPs<- abs(rnorm(1,mean=MC_chain[i-1, ncol(MC_chain)], sd=sdCop))
-         }
+
         JointTPM1<- Multipurpose_JointTransitionMatrix(MC_chain[i, 1:num_Gammas], nstrain, proposedcopPs, Modeltype)
 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
         if(any(!is.finite(JointTPM1))){
           MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
+          if(RM_Cop) {sdCop= sdCop * exp((RMdelta/i) * (0 - 0.234))}
         }else{
 
           Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1, y_total=y_total)
@@ -963,7 +975,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           else{
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           }
-          if(RM_Cop) sdCop= sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))
+          if(RM_Cop) {sdCop= sdCop * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
+          }
         }
       }else if(Modeltype==7){
 
