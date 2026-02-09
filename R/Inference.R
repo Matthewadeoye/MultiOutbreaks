@@ -80,10 +80,14 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    shape1params<- rep(2, num_Gammas)
+    shape2params<- rep(c(11,2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    shape1params<- rep(2, num_Gammas)
+    shape2params<- rep(c(11,2),num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
@@ -284,8 +288,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         proposedLambdas<- rep(0, nstrain)
         JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, proposedLambdas, Modeltype)
@@ -317,8 +321,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
 
@@ -407,8 +411,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, MC_chain[i-1, ncol(MC_chain)], Modeltype)
 
@@ -486,13 +490,13 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           index<- nstate * (n-1) + 1
 
           JointTPM1<- JointTPM
-          JointTPM1[n, ]<- gtools::rdirichlet(1, rep(1, nstate) + deltaP * MC_chain[i-1, (index:(n*nstate))])
+          JointTPM1[n, ]<- gtools::rdirichlet(1, rep(1/nstate, nstate) + deltaP * MC_chain[i-1, (index:(n*nstate))])
 
           proposalproposedGs<-  log(gtools::ddirichlet(JointTPM1[n, ], MC_chain[i-1, (index:(n*nstate))]))
           proposalcurrentproposedGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], JointTPM1[n, ]))
 
-          priorcurrentGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], rep(1, nstate)))
-          priorproposedGs<- log(gtools::ddirichlet(JointTPM1[n, ], rep(1, nstate)))
+          priorcurrentGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], rep(1/nstate, nstate)))
+          priorproposedGs<- log(gtools::ddirichlet(JointTPM1[n, ], rep(1/nstate, nstate)))
 
           Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0, y_total = y_total)
 
@@ -644,10 +648,14 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    shape1params<- rep(2, num_Gammas)
+    shape2params<- rep(c(11,2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    shape1params<- rep(2, num_Gammas)
+    shape2params<- rep(c(11,2),num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
@@ -814,8 +822,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         proposedLambdas<- rep(0, nstrain)
         JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, proposedLambdas, Modeltype)
@@ -847,8 +855,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
 
@@ -937,8 +945,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = rep(2,num_Gammas), shape2 = rep(2,num_Gammas), log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
        JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, MC_chain[i-1, ncol(MC_chain)], Modeltype)
 
@@ -1012,13 +1020,13 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           index<- nstate * (n-1) + 1
 
           JointTPM1<- JointTPM
-          JointTPM1[n, ] <- gtools::rdirichlet(1, rep(1, nstate) + deltaP * MC_chain[i-1, (index:(n*nstate))])
+          JointTPM1[n, ] <- gtools::rdirichlet(1, rep(1/nstate, nstate) + deltaP * MC_chain[i-1, (index:(n*nstate))])
 
           proposalproposedGs<-  log(gtools::ddirichlet(JointTPM1[n, ], MC_chain[i-1, (index:(n*nstate))]))
           proposalcurrentproposedGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], JointTPM1[n, ]))
 
-          priorcurrentGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], rep(1, nstate)))
-          priorproposedGs<- log(gtools::ddirichlet(JointTPM1[n, ], rep(1, nstate)))
+          priorcurrentGs<- log(gtools::ddirichlet(MC_chain[i-1, (index:(n*nstate))], rep(1/nstate, nstate)))
+          priorproposedGs<- log(gtools::ddirichlet(JointTPM1[n, ], rep(1/nstate, nstate)))
 
           Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=0, y_total=y_total)
 
