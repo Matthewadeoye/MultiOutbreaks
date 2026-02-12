@@ -67,7 +67,7 @@ multitypeFig2 <- function(array.object, names = NULL){
     spatdata <- array.object[,,i]
 
   ts_spatdata <- as.data.frame(t(spatdata))
-  ts_spatdata$Time <- seq.Date(from = as.Date("2010-01-01"), to = as.Date("2019-12-01"), by = "month")
+  ts_spatdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
   if(is.null(names)){
     colnames(ts_spatdata) <- c(paste("u", 1:(ncol(ts_spatdata) - 1), sep = ""), "Time")
   }else{
@@ -85,7 +85,7 @@ multitypeFig2 <- function(array.object, names = NULL){
       scale_x_date(date_labels = "%b %Y", date_breaks = "1 years") +
       theme(axis.title.y = element_text(size = 18),
             axis.title.x = element_text(size = 18),
-            axis.text.x = element_text(size = 15),
+            axis.text.x = element_text(size = 16),
             axis.text.y = element_text(size = 16),
             legend.title = element_text(size = 25),
             legend.text = element_text(size = 23))
@@ -98,7 +98,7 @@ multitypeFig2 <- function(array.object, names = NULL){
     scale_x_date(date_labels = "%b %Y", date_breaks = "1 years") +
     theme(axis.title.y = element_text(size = 18),
           axis.title.x = element_text(size = 18),
-          axis.text.x = element_text(size = 15),
+          axis.text.x = element_text(size = 16),
           axis.text.y = element_text(size = 16),
           legend.title = element_text(size = 25),
           legend.text = element_text(size = 23),
