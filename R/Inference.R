@@ -80,14 +80,14 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
-    shape1params<- rep(c(1, 6), num_Gammas)
-    shape2params<- rep(c(11, 6),num_Gammas)
+    shape1params<- rep(c(2, 2), num_Gammas)
+    shape2params<- rep(c(11, 2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
-    shape1params<- rep(c(1, 6), num_Gammas)
-    shape2params<- rep(c(11, 6),num_Gammas)
+    shape1params<- rep(c(2, 2), num_Gammas)
+    shape2params<- rep(c(11, 2),num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
@@ -648,14 +648,14 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
-    shape1params<- rep(c(1, 6), num_Gammas)
-    shape2params<- rep(c(11, 6),num_Gammas)
+    shape1params<- rep(c(2, 2), num_Gammas)
+    shape2params<- rep(c(11, 2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
-    shape1params<- rep(c(1, 6), num_Gammas)
-    shape2params<- rep(c(11, 6),num_Gammas)
+    shape1params<- rep(c(2, 2), num_Gammas)
+    shape2params<- rep(c(11, 2), num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)

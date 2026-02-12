@@ -993,10 +993,104 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
          scale_x_date(date_labels = "%b", date_breaks = "1 months") +
          theme(axis.title.y = element_text(size=18),
                axis.title.x = element_text(size=18),
-               axis.text.x = element_text(size=16),
+               axis.text.x = element_text(size=18),
                axis.text.y = element_text(size=16),
-               legend.title = element_text(size = 18),
-               legend.text = element_text(size = 16)))
+               legend.title = element_text(size = 22),
+               legend.text = element_text(size = 20)))
   plotlists<- list(a, b)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("A", "B"), label_size = 17, rel_widths = c(1.08, 1.15)))
+  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("A", "B"), label_size = 20, rel_widths = c(1.08, 1.15)))
+}
+
+
+relativemedian_maps<- function(all.infobjects, burn.in=1000){
+  plotlists<- list()
+
+  for(i in 1:8){
+    inf.object<- all.infobjects[[i]]
+    Model<- i
+
+    fullu.draws<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "u")]
+
+    #get required regions
+    poly <- cshapes::cshp(date=as.Date("2019-12-31"), useGW=TRUE)
+    #newpoly<- poly[poly$country_name %in% c("Austria","Belgium","Cyprus","Czech Republic",
+    #                                      "Denmark","Estonia","Finland","France","German Federal Republic",
+    #                                      "Greece","Hungary","Iceland","Ireland","Italy/Sardinia","Latvia",
+    #                                      "Lithuania","Luxembourg","Malta","Netherlands","Norway","Poland",
+    #                                      "Portugal","Rumania","Slovakia","Slovenia","Spain","Sweden","United Kingdom"), ]
+
+
+    newpoly<- poly[poly$country_name %in% c("Albania", "Austria", "Belarus (Byelorussia)", "Belgium", "Bosnia-Herzegovina",
+                                            "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland",
+                                            "France", "German Federal Republic", "Greece", "Hungary", "Iceland",
+                                            "Ireland", "Italy/Sardinia", "Kosovo", "Latvia", "Lithuania", "Luxembourg", "Malta",
+                                            "Macedonia (FYROM/North Macedonia)", "Moldova", "Montenegro", "Netherlands", "Norway",
+                                            "Poland", "Portugal", "Rumania", "Russia (Soviet Union)", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden",
+                                            "Switzerland", "Ukraine", "United Kingdom"), ]
+
+    Europe<- c("Austria","Belgium","Cyprus","Czech Republic",
+               "Denmark","Estonia","Finland","France","German Federal Republic",
+               "Greece","Hungary","Ireland","Italy/Sardinia","Latvia",
+               "Lithuania","Luxembourg","Malta","Netherlands","Norway","Poland",
+               "Portugal","Slovakia","Slovenia","Spain","Sweden","United Kingdom",
+               "Albania", "Belarus (Byelorussia)", "Bosnia-Herzegovina", "Bulgaria",
+               "Croatia", "Iceland", "Kosovo", "Rumania", "Russia (Soviet Union)",
+               "Moldova", "Montenegro", "Macedonia (FYROM/North Macedonia)",
+               "Serbia", "Switzerland", "Ukraine")
+
+    sortedpoly <- newpoly[order(newpoly$country_name), ]
+    #sortedpoly$country_name<- c("Austria","Belgium","Cyprus","Czechia",
+    #                          "Denmark","Estonia","Finland","France","Germany",
+    #                          "Greece","Hungary","Iceland","Ireland","Italy","Latvia",
+    #                          "Lithuania","Luxembourg","Malta","Netherlands","Norway","Poland",
+    #                          "Portugal","Romania","Slovakia","Slovenia","Spain","Sweden","United Kingdom")
+
+    u.draws<- colMeans(fullu.draws)
+    #expUi<- c(exp(u.draws), rep(NA, 15))
+    expUi<- c(u.draws, rep(NA, 15))
+    uidf<- data.frame(expUi = expUi, countryname = Europe)
+    sorteduidf<- uidf[order(uidf$countryname), ]
+    rrDF<- data.frame(rr=sorteduidf$expUi, gwcode=sortedpoly$gwcode, index=c(1:nrow(uidf)), name=sorteduidf$countryname)
+
+    library(sf)
+    sortedpoly<- st_make_valid(newpoly)
+    bbox <- st_bbox(c(xmin = -29, ymin = 30, xmax = 40.17875, ymax = 71.15471), crs = st_crs(sortedpoly))
+    sortedpoly<- st_crop(sortedpoly, bbox)
+    shapefile <- ggplot2::fortify(sortedpoly, region = 'gwcode')
+
+    shp_rrDF<- sp::merge(shapefile, rrDF,
+                         by.x="gwcode",
+                         by.y="gwcode",
+                         all.x=F)
+
+    library(ggplot2)
+    library(viridis)
+    if(Model == 8){
+      rfig<- (ggplot(data = shp_rrDF) +
+                geom_sf(aes(fill = rr)) +
+                #geom_sf_text(aes(label = country_name), size = 3) +
+                #scale_fill_viridis(option = "turbo", direction = 1, alpha=1, begin=0.6, end=1, na.value = "lightgrey") +  # Reverse the color scale
+                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, na.value = "lightgrey", labels = ~ format(round(exp(.),1), nsmall=1)) +
+                coord_sf() + theme_void() +
+                ggtitle("") + theme(plot.title = element_text(hjust = 0.55)) +
+                labs(fill = expression(Exp(u[i]))) +
+                theme(legend.title = element_text(size = 18),
+                      legend.text = element_text(size = 16)))
+    }else{
+      rfig<- (ggplot(data = shp_rrDF) +
+                geom_sf(aes(fill = rr)) +
+                #geom_sf_text(aes(label = country_name), size = 3) +
+                #scale_fill_viridis(option = "turbo", direction = 1, alpha=1, begin=0.6, end=1, na.value = "lightgrey") +  # Reverse the color scale
+                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, na.value = "lightgrey") +
+                coord_sf() + theme_void() +
+                ggtitle("") + theme(plot.title = element_text(hjust = 0.5)) +
+                labs(fill = "Median relative risk") +
+                theme(legend.position = "none")) #+
+      #theme_minimal()
+    }
+    plotlists[[Model]]<- rfig
+  }
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:4], ncol = 4, labels = c("A", "B", "C", "D"), label_size = 17)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[5:8], ncol = 4, labels = c("E", "F", "G", "H"), label_size = 17, rel_widths = c(1.16, 1.16, 1.16, 1.60))
+  print(cowplot::plot_grid(row_1, row_2, nrow = 2))
 }
