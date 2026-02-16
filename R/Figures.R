@@ -1094,3 +1094,51 @@ relativemedian_maps<- function(all.infobjects, burn.in=1000){
   row_2<- cowplot::plot_grid(plotlist = plotlists[5:8], ncol = 4, labels = c("E", "F", "G", "H"), label_size = 17, rel_widths = c(1.16, 1.16, 1.16, 1.60))
   print(cowplot::plot_grid(row_1, row_2, nrow = 2))
 }
+
+
+heat_maps<- function(outbreakProb_arraylist, location_names, pdfname=NULL){
+  countries<- location_names
+  time<- ncol(outbreakProb_arraylist[[1]][,,1])
+  ndept<- nrow(outbreakProb_arraylist[[1]][,,1])
+  nstrain<- dim(outbreakProb_arraylist[[1]])[3]
+  n_models<- length(outbreakProb_arraylist)
+  strain_names<- c("NEIMENI_B", "NEIMENI_W", "NEIMENI_Y", "NEIMENI_C")
+
+  pdf(paste0(pdfname,".pdf"), paper="special", width=24,height=46, pointsize=14)
+  par(mfrow=c(n_models+1,4))
+
+  for(i in 1:n_models){
+    outProb_model_i<- outbreakProb_arraylist[[i]]
+    for(k in 1:nstrain){
+      mean_Xit<- outProb_model_i[,,k]
+      mean_Xit<- mean_Xit[ndept:1, ]
+      par(mar = c(4, 7.5, 4, 1))
+      if(i==1){
+        image(x=1:time, y=1:ndept, t(mean_Xit), main = strain_names[k], axes=F, ylab = "", xlab = "Time [month/year]", cex.lab=1.8, zlim=c(0,1), cex.main=2.5)
+      }else{
+       image(x=1:time, y=1:ndept, t(mean_Xit), main = "", axes=F, ylab = "", xlab = "Time [month/year]", cex.lab=1.8, zlim=c(0,1))
+      }
+      #custom Y-axis
+      axis(2, at=seq(1, length(countries), length.out=length(countries)), labels=rev(countries), lwd.ticks = 1, las = 1, lwd=0, cex.axis = 1.40)
+      #custom X-axis
+      years<- 2011:2019
+      axis(1, at = seq(1, time, by = 12), labels = years, cex.axis = 1.8)
+      if(k==1) {legendary::labelFig(LETTERS[i], adj = c(-0.15, 0.05), font=2, cex=2.5)}
+    }
+  }
+
+  par(mar = c(5, 19, 7, 17))
+  #c(bottom, left, top, right) ==> specification order
+
+  zseq <- seq(0, 1, length.out = 101)
+  xseq <- c(0, 1)
+  zmat <- matrix(zseq[-1], nrow = 1)
+
+  image(x = xseq, y = zseq, z = zmat,
+        axes = FALSE, xlab = "", ylab = "", main = "")
+
+  axis(4, at = seq(0, 1, 0.2), labels = seq(0, 1, 0.2), las = 1, cex.axis=2.0)
+  mtext("Posterior probability of outbreak", side = 4, line = 5.0, cex = 2.0)
+  box()
+  dev.off()
+}

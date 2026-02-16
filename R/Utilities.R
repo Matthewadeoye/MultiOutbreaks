@@ -213,6 +213,17 @@ add_legend <- function(...) {
   legend(...)
 }
 
+#Cholesky confirmation for using mvnfast
+check_cholesky <- function(matrix) {
+  result <- tryCatch({
+    chol(matrix)
+    TRUE
+  }, error = function(e) {
+    FALSE
+  })
+  return(result)
+}
+
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
 #names(popn2010)<- NULL
