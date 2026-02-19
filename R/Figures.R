@@ -1004,6 +1004,15 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
 
 relativemedian_maps<- function(all.infobjects, burn.in=1000){
   plotlists<- list()
+  maxVec<- numeric(length(all.infobjects))
+  minVec<- numeric(length(all.infobjects))
+  for(m in 1:length(all.infobjects)){
+    model_m<- all.infobjects[[m]]
+    maxVec[m]<- max(colMeans(model_m[-(1:burn.in),startsWith(colnames(model_m), "u")]))
+    minVec[m]<- min(colMeans(model_m[-(1:burn.in),startsWith(colnames(model_m), "u")]))
+  }
+  minU<- min(minVec)
+  maxU<- max(maxVec)
 
   for(i in 1:8){
     inf.object<- all.infobjects[[i]]
@@ -1070,7 +1079,7 @@ relativemedian_maps<- function(all.infobjects, burn.in=1000){
                 geom_sf(aes(fill = rr)) +
                 #geom_sf_text(aes(label = country_name), size = 3) +
                 #scale_fill_viridis(option = "turbo", direction = 1, alpha=1, begin=0.6, end=1, na.value = "lightgrey") +  # Reverse the color scale
-                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, na.value = "lightgrey", labels = ~ format(round(exp(.),1), nsmall=1)) +
+                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, limits = c(minU, maxU), oob = scales::squish, na.value = "lightgrey", labels = ~ format(round(exp(.),1), nsmall=1)) +
                 coord_sf() + theme_void() +
                 ggtitle("") + theme(plot.title = element_text(hjust = 0.55)) +
                 labs(fill = expression(Exp(u[i]))) +
@@ -1081,7 +1090,7 @@ relativemedian_maps<- function(all.infobjects, burn.in=1000){
                 geom_sf(aes(fill = rr)) +
                 #geom_sf_text(aes(label = country_name), size = 3) +
                 #scale_fill_viridis(option = "turbo", direction = 1, alpha=1, begin=0.6, end=1, na.value = "lightgrey") +  # Reverse the color scale
-                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, na.value = "lightgrey") +
+                scale_fill_gradient2(low = "lightblue", mid = "blue", high = "red", midpoint = 0, limits = c(minU, maxU), oob = scales::squish, na.value = "lightgrey") +
                 coord_sf() + theme_void() +
                 ggtitle("") + theme(plot.title = element_text(hjust = 0.5)) +
                 labs(fill = "Median relative risk") +
@@ -1093,6 +1102,7 @@ relativemedian_maps<- function(all.infobjects, burn.in=1000){
   row_1<- cowplot::plot_grid(plotlist = plotlists[1:4], ncol = 4, labels = c("A", "B", "C", "D"), label_size = 17)
   row_2<- cowplot::plot_grid(plotlist = plotlists[5:8], ncol = 4, labels = c("E", "F", "G", "H"), label_size = 17, rel_widths = c(1.16, 1.16, 1.16, 1.60))
   print(cowplot::plot_grid(row_1, row_2, nrow = 2))
+  #export ==> 23 x 9
 }
 
 

@@ -829,6 +829,8 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 
     // Spatial u gradients
     arma::vec grad_u = arma::sum(delta, 1) - Q_u * u;
+    arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+    arma::mat cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
 
     double poisMean4GibbsUpdate = arma::accu(e_it % arma::exp(log_risk));
 
@@ -839,6 +841,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }else{
@@ -863,6 +866,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
     arma::vec grad_u(ndept, arma::fill::zeros);
     arma::mat cov_r(time, time, arma::fill::zeros);
     arma::mat cov_s(12, 12, arma::fill::zeros);
+    arma::mat cov_u(ndept, ndept, arma::fill::zeros);
     arma::vec poisMean4GibbsUpdate(nstrain, arma::fill::zeros);
 
     if(gradients == 0){
@@ -995,6 +999,8 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
+      arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
     }
 
     return List::create(
@@ -1004,6 +1010,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }
@@ -1084,6 +1091,8 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
 
     // Spatial u gradients
     arma::vec grad_u = arma::sum(delta, 1) - Q_u * u;
+    arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+    arma::mat cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
 
     double poisMean4GibbsUpdate = arma::accu(e_it % arma::exp(log_risk));
 
@@ -1094,6 +1103,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }else{
@@ -1118,6 +1128,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
     arma::vec grad_u(ndept, arma::fill::zeros);
     arma::mat cov_r(time, time, arma::fill::zeros);
     arma::mat cov_s(12, 12, arma::fill::zeros);
+    arma::mat cov_u(ndept, ndept, arma::fill::zeros);
     arma::vec poisMean4GibbsUpdate(nstrain, arma::fill::zeros);
 
     if(gradients == 0){
@@ -1247,6 +1258,8 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
+      arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
     }
 
     return List::create(
@@ -1256,6 +1269,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }
