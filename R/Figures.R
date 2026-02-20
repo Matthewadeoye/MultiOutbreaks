@@ -59,6 +59,119 @@ multitypeFig<- function(y, maxAll, Modeltype = ""){
 }
 
 
+multitypeFig_allsim<- function(y_arraylist, Modeltype = "") {
+  library(ggplot2)
+  library(cowplot)
+  library(reshape2)
+
+  nmodel  <- length(y_arraylist)
+  nstrain <- dim(y_arraylist[[1]][[1]])[3]
+
+  maxVec<- numeric(nmodel)
+  for(n in 1:nmodel){
+    model_n<- y_arraylist[[n]][[1]]
+    maxVec[n]<- max(model_n)
+  }
+  maxY<- max(maxVec)
+
+  plotlists <- list()
+  shared_legend <- NULL
+
+  for(m in 1:nmodel){
+
+    y<- y_arraylist[[m]][[1]]
+
+    for(i in 1:nstrain){
+
+      index<- (m - 1) * nstrain + i
+
+      sim.object <- y[ , , i]
+      ts_spatdata <- as.data.frame(t(sim.object))
+      ts_spatdata$Time <- 1:ncol(sim.object)
+
+      naming<- c(paste0("u", 1:(ncol(ts_spatdata)-1)), "Time")
+      colnames(ts_spatdata) <- naming
+
+      Colors<- rep(c("blue", "red"),
+                       length.out = nrow(sim.object))
+      Linetypes<- rep(c("dotted", "dashed",
+                         "dotdash", "longdash",
+                         "twodash"),
+                       length.out = nrow(sim.object))
+
+      long_data <- melt(ts_spatdata, id.vars = "Time")
+
+      base_plot <- ggplot(long_data,
+                          aes(Time, value,
+                              color = variable,
+                              linetype = variable)) +
+        geom_line() +
+        scale_color_manual(values = Colors, drop = FALSE) +
+        scale_linetype_manual(values = Linetypes, drop = FALSE) +
+        ylim(0, maxY) +
+        labs(x = "Time [month]",
+             y = "Case counts",
+             color = "Location",
+             linetype = "Location") +
+        theme(
+          axis.title = element_text(size = 18),
+          axis.text  = element_text(size = 16)
+        )
+      # Titles for first row
+      if (m == 1) {
+        base_plot <- base_plot +
+          ggtitle(paste0("Strain ", i)) +
+          theme(plot.title = element_text(
+            hjust = 0.5,
+            size  = 18,
+            face  = "bold"
+          ))
+      }
+      # Extract legend
+      if (m == nmodel && i == nstrain) {
+        legend_plot  <- base_plot +
+          theme(legend.position = "bottom",
+                legend.title = element_text(size = 18),
+                legend.text  = element_text(size = 16))
+        shared_legend <- cowplot::get_legend(legend_plot)
+      }
+
+      plotlists[[index]] <- base_plot +
+        theme(legend.position = "none")
+    }
+  }
+  #left labels
+  row_labels <- LETTERS[1:nmodel]
+  row_list <- list()
+
+  for (m in 1:nmodel) {
+
+    row_plots <- plotlists[((m - 1) * nstrain + 1):(m * nstrain)]
+
+    row_grid <- plot_grid(plotlist = row_plots,
+                          ncol = nstrain)
+
+    label_plot <- ggdraw() +
+      draw_label(row_labels[m],
+                 fontface = "bold",
+                 size = 20,
+                 x = 0.5, y = 0.5)
+
+    row_list[[m]] <- plot_grid(label_plot,
+                               row_grid,
+                               ncol = 2,
+                               rel_widths = c(0.06, 1))
+  }
+  main_grid <- plot_grid(plotlist = row_list,
+                         ncol = 1)
+  finalplot <- plot_grid(main_grid,
+                         shared_legend,
+                         ncol = 1,
+                         rel_heights = c(1, 0.08))
+  print(finalplot)
+}
+
+
 multitypeFig2 <- function(array.object, names = NULL){
   plotlists<- list()
   nstrain<- dim(array.object)[3]

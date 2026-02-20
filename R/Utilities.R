@@ -224,6 +224,16 @@ check_cholesky <- function(matrix) {
   return(result)
 }
 
+#QR-decomposition for sum-to-zero basis
+QRstz_basis<- function(dimension){
+  A<- diag(dimension)
+  A[, 1]<- 1
+
+  qrDecomposition<- qr(A)
+  Q<- qr.Q(qrDecomposition)
+  return(Q[, 2:dimension])
+}
+
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
 #names(popn2010)<- NULL

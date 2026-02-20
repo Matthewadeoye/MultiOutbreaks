@@ -70,6 +70,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// randomwalk2_sumzero_cpp
+double randomwalk2_sumzero_cpp(const arma::vec& x, double PrecisionR);
+RcppExport SEXP _MultiOutbreaks_randomwalk2_sumzero_cpp(SEXP xSEXP, SEXP PrecisionRSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type PrecisionR(PrecisionRSEXP);
+    rcpp_result_gen = Rcpp::wrap(randomwalk2_sumzero_cpp(x, PrecisionR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // seasonalComp2_cpp
 double seasonalComp2_cpp(const arma::vec& x, double y, const arma::mat& z);
 RcppExport SEXP _MultiOutbreaks_seasonalComp2_cpp(SEXP xSEXP, SEXP ySEXP, SEXP zSEXP) {
@@ -418,6 +430,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_MultiOutbreaks_logVecMatMult2", (DL_FUNC) &_MultiOutbreaks_logVecMatMult2, 2},
     {"_MultiOutbreaks_stationarydistArma_cpp", (DL_FUNC) &_MultiOutbreaks_stationarydistArma_cpp, 1},
     {"_MultiOutbreaks_randomwalk2_cpp", (DL_FUNC) &_MultiOutbreaks_randomwalk2_cpp, 2},
+    {"_MultiOutbreaks_randomwalk2_sumzero_cpp", (DL_FUNC) &_MultiOutbreaks_randomwalk2_sumzero_cpp, 2},
     {"_MultiOutbreaks_seasonalComp2_cpp", (DL_FUNC) &_MultiOutbreaks_seasonalComp2_cpp, 3},
     {"_MultiOutbreaks_logIGMRF1_cpp", (DL_FUNC) &_MultiOutbreaks_logIGMRF1_cpp, 4},
     {"_MultiOutbreaks_JointTransitionMatrix_arma_cpp", (DL_FUNC) &_MultiOutbreaks_JointTransitionMatrix_arma_cpp, 2},

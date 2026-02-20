@@ -21,6 +21,10 @@ randomwalk2_cpp <- function(componentR, PrecisionR) {
     .Call(`_MultiOutbreaks_randomwalk2_cpp`, componentR, PrecisionR)
 }
 
+randomwalk2_sumzero_cpp <- function(x, PrecisionR) {
+    .Call(`_MultiOutbreaks_randomwalk2_sumzero_cpp`, x, PrecisionR)
+}
+
 seasonalComp2_cpp <- function(x, y, z) {
     .Call(`_MultiOutbreaks_seasonalComp2_cpp`, x, y, z)
 }
