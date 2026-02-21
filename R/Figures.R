@@ -304,14 +304,14 @@ RecoverInf.plot<- function(inf.object, true_r, true_s, Modeltype=""){
 RecoverInfAllRS.plot<- function(allinf.object, true_r, true_s){
 
   allobject<- length(allinf.object)
-  pdf("AllRS2.pdf", paper="a4", width=12,height=12, pointsize=12)
+  pdf("AllRS1.pdf", paper="a4", width=12,height=12, pointsize=12)
 
   par(mfrow=c(4,2))
   # Modeltype<- c("No outbreak", "Independent 1", "Independent 2", "Gaussian copula-dependent 1",
   #                "Gaussian copula-dependent 2", "Frank copula-dependent 1",
   #               "Frank copula-dependent 2", "General-dependent")
-  #alphabets<- c("A", "C", "E", "G")
-  alphabets<- c("B", "D", "F", "H")
+  alphabets<- c("A", "C", "E", "G")
+  #alphabets<- c("B", "D", "F", "H")
   for(a in 1:allobject){
     inf.object<- allinf.object[[a]]
 
@@ -348,9 +348,9 @@ RecoverInfAllRS.plot<- function(allinf.object, true_r, true_s){
     points(1:length(inf.s), true_s, pch = 19)
     grid()
   }
-  add_legend("topright", legend=c("Truth", "Posterior means"), lty=c(NA, 1),
-             pch=c(19, NA), col=c("black", "red"),
-             horiz=TRUE, bty='n', cex=1.8)
+#  add_legend("topright", legend=c("Truth", "Posterior means"), lty=c(NA, 1),
+#             pch=c(19, NA), col=c("black", "red"),
+#             horiz=TRUE, bty='n', cex=1.8)
   dev.off()
 }
 
@@ -1076,7 +1076,7 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
     rmat[i, ]<- r.draws
     smat[i, ]<- s.draws
   }
-  r_names<- c("0", "I", "II", "III", "IV", "V", "VI", "VII")
+  r_names<- c("A", "B", "C", "D", "E", "F", "G", "H")
   ts_rdata <- as.data.frame(t(rmat))
   ts_sdata <- as.data.frame(t(smat))
   ts_rdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
@@ -1111,7 +1111,8 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
                legend.title = element_text(size = 22),
                legend.text = element_text(size = 20)))
   plotlists<- list(a, b)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("A", "B"), label_size = 20, rel_widths = c(1.08, 1.15)))
+  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("I", "II"), label_size = 20, rel_widths = c(1.08, 1.15)))
+  #export==> 23 x 9
 }
 
 
@@ -1263,5 +1264,82 @@ heat_maps<- function(outbreakProb_arraylist, location_names, pdfname=NULL){
   axis(4, at = seq(0, 1, 0.2), labels = seq(0, 1, 0.2), las = 1, cex.axis=2.0)
   mtext("Posterior probability of outbreak", side = 4, line = 5.0, cex = 2.0)
   box()
+  dev.off()
+}
+
+
+# Super-impose true values
+simulation_heat_maps<- function(Truth_arraylist, matrix_arraylist, Outbreaktype=""){
+  time<- ncol(matrix_arraylist[[1]][,,1])
+  ndept<- nrow(matrix_arraylist[[1]][,,1])
+  nstrain<- dim(matrix_arraylist[[1]])[3]
+  n_models<- length(matrix_arraylist)
+  pdf(paste0("Alloutbreaksperstrain",Outbreaktype,".pdf"), paper="special", width=36,height=46, pointsize=14)
+  par(mfrow=c(n_models+1,5))
+
+  for(m in 1:n_models){
+    matrix_array<- matrix_arraylist[[m]]
+    Truth_array<- Truth_arraylist[[m]]
+  for(i in 1:nstrain){
+    Truth<- Truth_array[,,i]
+    smallTruth<- Truth[c(1,3,5,7,9), ]
+    bigTruth<- Truth[c(2,4,6,8), ]
+    bigsmallTruth<- Truth[c(2,4,6,8,1,3,5,7,9), ]
+
+    X_it<- matrix_array[,,i]
+    smallxit<- X_it[c(1,3,5,7,9), ]
+    bigxit<- X_it[c(2,4,6,8), ]
+    bigsmallxit<- X_it[c(2,4,6,8,1,3,5,7,9), ]
+    par(mar = c(4, 7.5, 4, 1))
+    if(m==1){
+      image(x=1:time, y=1:ndept, t(bigsmallxit), zlim = c(0,1),  main =paste0("Strain ", i), axes=F, ylab="spatial location", xlab="Time [month]", cex.lab=1.80, cex.main=3.0)
+    }else{
+      image(x=1:time, y=1:ndept, t(bigsmallxit), zlim = c(0,1),  main ="", axes=F, ylab="spatial location", xlab="Time [month]", cex.lab=1.80, cex.main=2.5)
+    }
+    abline(h=4.5, col="black", lty=2)
+    #custom Y-axis
+    axis(2, at=seq(1, 4, length.out=4), labels=c("u2", "u4", "u6", "u8"), col = "red", col.axis="red", lwd.ticks = 1, las = 1, lwd=0, cex.axis = 1.8, cex.lab=1.8)
+    axis(2, at=seq(5, 9, length.out=5), labels=c("u1", "u3", "u5", "u7", "u9"), col = "blue", col.axis="blue", lwd.ticks = 1, las = 1, lwd=0, cex.axis = 1.8, cex.lab=1.8)
+    #custom X-axis
+    axis(1, cex.axis = 1.8)
+    # Build grid of row/col indices
+    grid <- expand.grid(x = seq(nrow(bigsmallTruth)),
+                        y = seq(ncol(bigsmallTruth)))
+    out <- transform(grid, z = bigsmallTruth[as.matrix(grid)])
+
+    # Select true outbreak cells
+    outbreakcell <- out$z == 1
+
+    # Overlay truth as colored dots at cell centers
+    points(out$y[outbreakcell],   # time axis
+           out$x[outbreakcell],   # location axis
+           pch = 16, cex = 2.0, col = "magenta")
+    if(i==1) {legendary::labelFig(LETTERS[m], adj = c(-0.15, 0.05), font=2, cex=3.0)}
+    }
+  }
+    par(mar = c(3, 21, 3, 21))
+    #c(bottom, left, top, right) ==> specification order
+
+    zseq <- seq(0, 1, length.out = 101)
+    xseq <- c(0, 1)
+    zmat <- matrix(zseq[-1], nrow = 1)
+
+    image(x = xseq, y = zseq, z = zmat,
+          axes = FALSE, xlab = "", ylab = "", main = "")
+
+    axis(4, at = seq(0, 1, 0.2), labels = seq(0, 1, 0.2), las = 1, cex.axis=2.0)
+    mtext("Posterior probability of outbreak", side = 4, line = 5.0, cex = 2.0)
+
+    add_legend(0.30, 1.11, legend=c("Truth", "Small cities", "Large cities"), lty=c(NA, 1, 1),
+               pch=c(16, NA, NA), col=c("magenta", "blue", "red"),
+               horiz=TRUE, bty='n', cex=2.0)
+
+  #  add_legend(0.50, -0.4, legend=substitute(paste(bold(Outbreaktype))),
+  #             col="black",
+  #             horiz=TRUE, bty='n', cex=3.0)
+  add_legend(0.58, -0.30, legend=substitute(paste(bold(Outbreaktype))),
+             col="black",
+             horiz=TRUE, bty='n', cex=5.0)
+
   dev.off()
 }

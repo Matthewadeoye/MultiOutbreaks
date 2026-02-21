@@ -154,6 +154,22 @@ Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, y_total=
 }
 
 
+Decode_to_Perstrain <- function(StatesMatrix, nstrain){
+  Bits <- encodeBits(K = nstrain)
+  ndept <- nrow(StatesMatrix)
+  time <- ncol(StatesMatrix)
+
+  Outbreaks <- array(NA, dim = c(ndept, time, nstrain))
+
+  for (i in 1:ndept) {
+    for (t in 1:time) {
+      s <- StatesMatrix[i, t]   #joint state index
+      Outbreaks[i, t, ] <- Bits[s + 1, ]  #per-strain indicators
+    }
+  }
+  return(Outbreaks)
+}
+
 #Crude estimates
 crudeEst<- function(y, e_it){
   ydot<- colSums(y, na.rm = T)
