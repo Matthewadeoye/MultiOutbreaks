@@ -351,8 +351,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // SMOOTHINGgradmultstrainLoglikelihood_cpp
-List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total);
-RcppExport SEXP _MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP y_totalSEXP) {
+List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat Qstz_r, arma::mat Qstz_s, arma::mat Qstz_u, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP Qstz_rSEXP, SEXP Qstz_sSEXP, SEXP Qstz_uSEXP, SEXP y_totalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -371,14 +371,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Q_s(Q_sSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Q_u(Q_uSEXP);
     Rcpp::traits::input_parameter< int >::type gradients(gradientsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_r(Qstz_rSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_s(Qstz_sSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_u(Qstz_uSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
-    rcpp_result_gen = Rcpp::wrap(SMOOTHINGgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total));
+    rcpp_result_gen = Rcpp::wrap(SMOOTHINGgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total));
     return rcpp_result_gen;
 END_RCPP
 }
 // FFBSgradmultstrainLoglikelihood_cpp
-List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total);
-RcppExport SEXP _MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP y_totalSEXP) {
+List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s, arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k, int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat Qstz_r, arma::mat Qstz_s, arma::mat Qstz_u, arma::mat y_total);
+RcppExport SEXP _MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp(SEXP ySEXP, SEXP e_itSEXP, SEXP nstrainSEXP, SEXP rSEXP, SEXP sSEXP, SEXP uSEXP, SEXP jointTPMSEXP, SEXP BSEXP, SEXP BitsSEXP, SEXP a_kSEXP, SEXP ModelSEXP, SEXP Q_rSEXP, SEXP Q_sSEXP, SEXP Q_uSEXP, SEXP gradientsSEXP, SEXP Qstz_rSEXP, SEXP Qstz_sSEXP, SEXP Qstz_uSEXP, SEXP y_totalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -397,8 +400,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Q_s(Q_sSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Q_u(Q_uSEXP);
     Rcpp::traits::input_parameter< int >::type gradients(gradientsSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_r(Qstz_rSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_s(Qstz_sSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Qstz_u(Qstz_uSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type y_total(y_totalSEXP);
-    rcpp_result_gen = Rcpp::wrap(FFBSgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total));
+    rcpp_result_gen = Rcpp::wrap(FFBSgradmultstrainLoglikelihood_cpp(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -452,8 +458,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_MultiOutbreaks_add_untypedPoissonLoglikelihood", (DL_FUNC) &_MultiOutbreaks_add_untypedPoissonLoglikelihood, 3},
     {"_MultiOutbreaks_add_untyped_delta", (DL_FUNC) &_MultiOutbreaks_add_untyped_delta, 4},
     {"_MultiOutbreaks_add_untyped_logemission", (DL_FUNC) &_MultiOutbreaks_add_untyped_logemission, 3},
-    {"_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp, 16},
-    {"_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp, 16},
+    {"_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp, 19},
+    {"_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp", (DL_FUNC) &_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp, 19},
     {"_MultiOutbreaks_PostOutbreakProbs_cpp", (DL_FUNC) &_MultiOutbreaks_PostOutbreakProbs_cpp, 11},
     {NULL, NULL, 0}
 };

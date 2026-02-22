@@ -98,6 +98,7 @@ simulateMultiModel<- function(Modeltype, time, nstrain, adj.matrix, copulaParam,
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype == 7){
+    copulaParam<- 0
     JointTPM<- matrix(NA, nrow = Jointstates, ncol = Jointstates)
     T.prob<- 0
     JointTPM<- gtools::rdirichlet(Jointstates, sample(2:7, size = Jointstates, replace = T))

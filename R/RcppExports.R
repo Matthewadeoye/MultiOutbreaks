@@ -109,12 +109,12 @@ add_untyped_logemission <- function(y_vec, lambda_vec, y_totalscalar) {
     .Call(`_MultiOutbreaks_add_untyped_logemission`, y_vec, lambda_vec, y_totalscalar)
 }
 
-SMOOTHINGgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total) {
-    .Call(`_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total)
+SMOOTHINGgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total) {
+    .Call(`_MultiOutbreaks_SMOOTHINGgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total)
 }
 
-FFBSgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total) {
-    .Call(`_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, y_total)
+FFBSgradmultstrainLoglikelihood_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total) {
+    .Call(`_MultiOutbreaks_FFBSgradmultstrainLoglikelihood_cpp`, y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, Model, Q_r, Q_s, Q_u, gradients, Qstz_r, Qstz_s, Qstz_u, y_total)
 }
 
 PostOutbreakProbs_cpp <- function(y, e_it, nstrain, r, s, u, jointTPM, B, Bits, a_k, y_total) {

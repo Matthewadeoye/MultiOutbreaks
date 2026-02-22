@@ -773,7 +773,8 @@ double add_untyped_logemission(arma::vec y_vec, arma::vec lambda_vec, double y_t
 // [[Rcpp::export]]
 List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s,
                                               arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k,
-                                              int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total){
+                                              int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients,
+                                              arma::mat Qstz_r, arma::mat Qstz_s, arma::mat Qstz_u, arma::mat y_total){
 
   int ndept = e_it.n_rows;
   int time = e_it.n_cols;
@@ -823,8 +824,10 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 
     // Temporal trend r gradients
     arma::vec grad_r = arma::sum(delta, 0).t() - Q_r * r;
+    grad_r = Qstz_r.t() * grad_r;
     arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
     arma::mat cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
+    cov_r = Qstz_r.t() * cov_r * Qstz_r;
 
     // Seasonal s gradients
     arma::vec grad_s(12, arma::fill::zeros);
@@ -839,11 +842,17 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       }
     }
     grad_s -= Q_s * s;
+    grad_s = Qstz_s.t() * grad_s;
     arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+    cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
     // Spatial u gradients
     arma::vec grad_u = arma::sum(delta, 1) - Q_u * u;
+    grad_u = Qstz_u.t() * grad_u;
+    arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+    arma::mat cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
+    cov_u = Qstz_u.t() * cov_u * Qstz_u;
 
     double poisMean4GibbsUpdate = arma::accu(e_it % arma::exp(log_risk));
 
@@ -854,6 +863,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }else{
@@ -878,6 +888,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
     arma::vec grad_u(ndept, arma::fill::zeros);
     arma::mat cov_r(time, time, arma::fill::zeros);
     arma::mat cov_s(12, 12, arma::fill::zeros);
+    arma::mat cov_u(ndept, ndept, arma::fill::zeros);
     arma::vec poisMean4GibbsUpdate(nstrain, arma::fill::zeros);
 
     if(gradients == 0){
@@ -990,8 +1001,10 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 
       // Temporal trend r gradients
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
+      grad_r = Qstz_r.t() * grad_r;
       arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
       cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
+      cov_r = Qstz_r.t() * cov_r * Qstz_r;
 
       // Seasonal s gradients
       arma::vec fishervec_s(12, arma::fill::zeros);
@@ -1005,11 +1018,17 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
         }
       }
       grad_s -= Q_s * s;
+      grad_s = Qstz_s.t() * grad_s;
       cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+      cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
+      grad_u = Qstz_u.t() * grad_u;
+      arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
+      cov_u = Qstz_u.t() * cov_u * Qstz_u;
     }
 
     return List::create(
@@ -1019,6 +1038,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }
@@ -1027,7 +1047,8 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
 // [[Rcpp::export]]
 List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstrain, arma::vec r, arma::vec s,
                                          arma::vec u, arma::mat jointTPM, arma::vec B, arma::mat Bits, arma::vec a_k,
-                                         int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients, arma::mat y_total){
+                                         int Model, arma::mat Q_r, arma::mat Q_s, arma::mat Q_u, int gradients,
+                                         arma::mat Qstz_r, arma::mat Qstz_s, arma::mat Qstz_u, arma::mat y_total){
 
   int ndept = e_it.n_rows;
   int time = e_it.n_cols;
@@ -1078,8 +1099,10 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
 
     // Temporal trend r gradients
     arma::vec grad_r = arma::sum(delta, 0).t() - Q_r * r;
+    grad_r = Qstz_r.t() * grad_r;
     arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
     arma::mat cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
+    cov_r = Qstz_r.t() * cov_r * Qstz_r;
 
     // Seasonal s gradients
     arma::vec grad_s(12, arma::fill::zeros);
@@ -1094,11 +1117,17 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       }
     }
     grad_s -= Q_s * s;
+    grad_s = Qstz_s.t() * grad_s;
     arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+    cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
     // Spatial u gradients
     arma::vec grad_u = arma::sum(delta, 1) - Q_u * u;
+    grad_u = Qstz_u.t() * grad_u;
+    arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+    arma::mat cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
+    cov_u = Qstz_u.t() * cov_u * Qstz_u;
 
     double poisMean4GibbsUpdate = arma::accu(e_it % arma::exp(log_risk));
 
@@ -1109,6 +1138,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }else{
@@ -1133,6 +1163,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
     arma::vec grad_u(ndept, arma::fill::zeros);
     arma::mat cov_r(time, time, arma::fill::zeros);
     arma::mat cov_s(12, 12, arma::fill::zeros);
+    arma::mat cov_u(ndept, ndept, arma::fill::zeros);
     arma::vec poisMean4GibbsUpdate(nstrain, arma::fill::zeros);
 
     if(gradients == 0){
@@ -1243,8 +1274,10 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
 
       // Temporal trend r gradients
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
+      grad_r = Qstz_r.t() * grad_r;
       arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
       cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
+      cov_r = Qstz_r.t() * cov_r * Qstz_r;
 
       // Seasonal s gradients
       arma::vec fishervec_s(12, arma::fill::zeros);
@@ -1258,10 +1291,16 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
         }
       }
       grad_s -= Q_s * s;
+      grad_s = Qstz_s.t() * grad_s;
       cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+      cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
+      grad_u = Qstz_u.t() * grad_u;
+      arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
+      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
+      cov_u = Qstz_u.t() * cov_u * Qstz_u;
     }
 
     return List::create(
@@ -1271,6 +1310,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       Named("grad_u") = grad_u,
       Named("cov_r") = cov_r,
       Named("cov_s") = cov_s,
+      Named("cov_u") = cov_u,
       Named("poisMean4GibbsUpdate") = poisMean4GibbsUpdate
     );
   }

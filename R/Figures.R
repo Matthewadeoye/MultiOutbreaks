@@ -1330,16 +1330,16 @@ simulation_heat_maps<- function(Truth_arraylist, matrix_arraylist, Outbreaktype=
     axis(4, at = seq(0, 1, 0.2), labels = seq(0, 1, 0.2), las = 1, cex.axis=2.0)
     mtext("Posterior probability of outbreak", side = 4, line = 5.0, cex = 2.0)
 
-    add_legend(0.30, 1.11, legend=c("Truth", "Small cities", "Large cities"), lty=c(NA, 1, 1),
+    add_legend(-0.60, -0.90, legend=c("Truth", "Small cities", "Large cities"), lty=c(NA, 1, 1),
                pch=c(16, NA, NA), col=c("magenta", "blue", "red"),
-               horiz=TRUE, bty='n', cex=2.0)
+               horiz=TRUE, bty='n', cex=5.5)
 
   #  add_legend(0.50, -0.4, legend=substitute(paste(bold(Outbreaktype))),
   #             col="black",
   #             horiz=TRUE, bty='n', cex=3.0)
-  add_legend(0.58, -0.30, legend=substitute(paste(bold(Outbreaktype))),
-             col="black",
-             horiz=TRUE, bty='n', cex=5.0)
+#  add_legend(0.58, -0.30, legend=substitute(paste(bold(Outbreaktype))),
+#             col="black",
+#             horiz=TRUE, bty='n', cex=5.0)
 
   dev.off()
 }
