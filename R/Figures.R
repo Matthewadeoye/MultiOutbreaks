@@ -427,10 +427,12 @@ RecoverInfUA.plot <- function(inf.object, true_u, true_a_k,
           axis.text = element_text(size = 16),
           legend.position = "none")
 
-  plotlists <- list(rfigs_u, rfigs_ak)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2,
-                           labels = c("A", ""),
-                           rel_widths = c(1.25, 1), label_size = 25))
+  return(list(rfigs_u,rfigs_ak))
+
+#  plotlists <- list(rfigs_u, rfigs_ak)
+#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2,
+#                           labels = c("A", ""),
+#                           rel_widths = c(1.25, 1), label_size = 25))
 
   # Legends
   #  add_legend(0.85, 1.15, legend = "Truth",
@@ -438,6 +440,25 @@ RecoverInfUA.plot <- function(inf.object, true_u, true_a_k,
   #             horiz = TRUE, bty = 'n', cex = 1.8)
   #  add_legend("topleft", legend = substitute(paste(bold(Modeltype))),
   #             horiz = TRUE, bty = 'n', cex = 1.5)
+}
+
+
+AllViolinplots<- function(plotlists){
+  library(ggplot2)
+  library(cowplot)
+  row_1<- cowplot::plot_grid(plotlist = plotlists[[1]], ncol = 5, labels = c("A", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_2<- cowplot::plot_grid(plotlist = plotlists[[2]], ncol = 5, labels = c("B", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1, 1))
+  row_3<- cowplot::plot_grid(plotlist = plotlists[[3]], ncol = 5, labels = c("C", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_4<- cowplot::plot_grid(plotlist = plotlists[[4]], ncol = 5, labels = c("D", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_5<- cowplot::plot_grid(plotlist = plotlists[[5]], ncol = 5, labels = c("E", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_6<- cowplot::plot_grid(plotlist = plotlists[[6]], ncol = 5, labels = c("F", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_7<- cowplot::plot_grid(plotlist = plotlists[[7]], ncol = 5, labels = c("G", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  row_8<- cowplot::plot_grid(plotlist = plotlists[[8]], ncol = 5, labels = c("H", "", "", "", ""), label_size = 22, rel_widths = c(1.16, 1.16, 1.16, 1.60, 1))
+  print(cowplot::plot_grid(row_1, row_2, row_3,row_4,row_5,row_6,row_7,row_8, nrow = 8))
+  add_legend(0.75, 1.40, legend = "Truth",
+             pch = 19, col = "black",
+             horiz = TRUE, bty = 'n', cex = 5)
+  #36 x 26 Export
 }
 
 
@@ -544,11 +565,12 @@ RecoverInfUAB.plot <- function(inf.object, true_u, true_a_k, true_B,
           legend.position = "none")
 
   #combine plots
-  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 3,
+  return(list(rfigs_u, rfigs_ak, rfigs_B))
+#  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B)
+#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 3,
                            #                           labels = c("A", "B", "C"),
-                           labels = c("H", "", ""),
-                           rel_widths = c(1.25, 1, 1), label_size = 25))
+#                           labels = c("H", "", ""),
+#                           rel_widths = c(1.25, 1, 1), label_size = 25))
 
   # Legends
   #  add_legend(0.85, 1.15, legend = "Truth",
@@ -692,16 +714,18 @@ RecoverInfUABG.plot<- function(inf.object, true_u, true_a_k, true_B, true_G,
           axis.text = element_text(size = 16),
           legend.position = "none")
 
-  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 4,
+  return(list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G))
+
+#  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G)
+#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 4,
                            #                           labels = c("A", "B", "C", "D","E"),
-                           labels = c("C", "", "", ""),
-                           rel_widths = c(1.25, 1, 1, 1.25), label_size = 25))
+#                           labels = c("C", "", "", ""),
+#                           rel_widths = c(1.25, 1, 1, 1.25), label_size = 25))
 
   # Legends
-  add_legend(0.85, 1.15, legend = "Truth",
-             pch = 19, col = "black",
-             horiz = TRUE, bty = 'n', cex = 2.0)
+#  add_legend(0.85, 1.15, legend = "Truth",
+#             pch = 19, col = "black",
+#             horiz = TRUE, bty = 'n', cex = 2.0)
   #  add_legend("topleft", legend = substitute(paste(bold(Modeltype))),
   #             horiz = TRUE, bty = 'n', cex = 1.5)
 }
@@ -862,11 +886,13 @@ RecoverInfUABGcop.plotFrank <- function(inf.object, true_u, true_a_k, true_B, tr
           axis.text = element_text(size = 16),
           legend.position = "none")
 
-  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_cop)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
-                           #                           labels = c("A", "B", "C", "D","E"),
-                           labels = c("G", "", "", "",""),
-                           rel_widths = c(1.25, 1, 1, 1.5, 0.7), label_size = 25))
+  return(list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_cop))
+
+#  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_cop)
+#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
+#                           #                           labels = c("A", "B", "C", "D","E"),
+#                           labels = c("G", "", "", "",""),
+#                           rel_widths = c(1.25, 1, 1, 1.5, 0.7), label_size = 25))
 
   # Legends
   #  add_legend(0.85, 1.15, legend = "Truth",
@@ -1043,12 +1069,13 @@ RecoverInfUABGcop.plotGauss <- function(inf.object, true_u, true_a_k, true_B, tr
           axis.text = element_text(size = 16),
           legend.position = "none")
 
-  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
+  return(list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c))
+#  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c)
+#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
                            #                           labels = c("A", "B", "C", "D","E"),
-                           labels = c("E", "", "", "",""),
+#                           labels = c("E", "", "", "",""),
                            #                           rel_widths = c(1, 1, 1, 0.7, 1.4), label_size = 25)),
-                           rel_widths = c(1, 0.7, 0.7, 1.2, 1.3), label_size = 25))
+#                           rel_widths = c(1, 0.7, 0.7, 1.2, 1.3), label_size = 25))
 
 
   # Legends
