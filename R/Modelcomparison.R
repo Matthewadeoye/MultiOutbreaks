@@ -12,6 +12,16 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
   Bits<- encodeBits(nstrain)
   gh <- statmod::gauss.quad(30, kind = "hermite")
 
+  if(is.null(y_total)){
+    sumY1<- y[,,1]
+    for(k in 2:nstrain){
+      sumY1<- sumY1 + y[,,k]
+    }
+    y_total<- sumY1
+  }else{
+    y_total<- y_total
+  }
+
   RW2PrecMat<- matrix(0, nrow=time, ncol=time)
   RW2PrecMat[1,(1:3)]<- c(1,-2,1)
   RW2PrecMat[2,(1:4)]<- c(-2,5,-4,1)
@@ -88,7 +98,67 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
             logIGMRF1_cpp(u, kappaU, R, rankdef) -
             mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
-      }else{
+      }else if(Modeltype %in% c(5,6) && nstrain>2){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || theta[length(theta)]<0){
+          a[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
+                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                    randomwalk2_cpp(r, kappaR) +
+                    seasonalComp2_cpp(s, kappaS, SMat) +
+                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                  - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(3,4)){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || any(abs(theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)])>1)){
+          a[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
+            sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+            sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+            randomwalk2_cpp(r, kappaR) +
+            seasonalComp2_cpp(s, kappaS, SMat) +
+            logIGMRF1_cpp(u, kappaU, R, rankdef) +
+            sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+          - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(1,2,5,6,7)){
         if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0)){
           a[i]<- NA
         }else{
@@ -105,23 +175,18 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
           B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
           intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
-        if(Modeltype %in% c(1,2,5,6,7)){
-            JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }else if(Modeltype %in% c(3,4)){
-            JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
-            sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-            sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
-            randomwalk2_cpp(r, kappaR) +
-            seasonalComp2_cpp(s, kappaS, SMat) +
-            logIGMRF1_cpp(u, kappaU, R, rankdef) +
-            sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
-          - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                    randomwalk2_cpp(r, kappaR) +
+                    seasonalComp2_cpp(s, kappaS, SMat) +
+                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                  - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }
     }
@@ -143,14 +208,74 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
           u<- theta[3+time+12+(1:ndept)]
           B<- 0
           intercepts<- theta[3+time+12+ndept+(1:nstrain)]
-          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike
-                    + sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) -
                     mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
         }
-      }else{
+      }else if(Modeltype %in% c(5,6) && nstrain>2){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || theta[length(theta)]<0){
+          a[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
+                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                    randomwalk2_cpp(r, kappaR) +
+                    seasonalComp2_cpp(s, kappaS, SMat) +
+                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                  - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(3,4)){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || any(abs(theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)])>1)){
+          a[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
+                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                    randomwalk2_cpp(r, kappaR) +
+                    seasonalComp2_cpp(s, kappaS, SMat) +
+                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                  - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(1,2,5,6,7)){
         if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0)){
           a[i]<- NA
         }else{
@@ -167,15 +292,10 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
           B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
           intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
-          if(Modeltype %in% c(1,2,5,6,7)){
-            JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }else if(Modeltype %in% c(3,4)){
-            JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
                     sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
@@ -183,7 +303,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
                     sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
-          - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+                  - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }
     }
@@ -229,6 +349,16 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
   SMat[12, ]<- c(-1, rep(0, 12-3), -1, 2)
   for(i in 3:(12-3)){
     SMat[i+1, ((i):(i+2))]<- c(-1,2,-1)
+  }
+
+  if(is.null(y_total)){
+    sumY1<- y[,,1]
+    for(k in 2:nstrain){
+      sumY1<- sumY1 + y[,,k]
+    }
+    y_total<- sumY1
+  }else{
+    y_total<- y_total
   }
 
   Qstz_r<- QRstz_basis(time)
@@ -292,7 +422,67 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
                     logIGMRF1_cpp(u, kappaU, R, rankdef) -
                     mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
-      }else{
+      }else if(Modeltype %in% c(5,6) && nstrain>2){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || theta[length(theta)]<0){
+          logDensProposal[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
+                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                    randomwalk2_cpp(r, kappaR) +
+                    seasonalComp2_cpp(s, kappaS, SMat) +
+                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                  - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(3,4)){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || any(abs(theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)])>1)){
+          logDensProposal[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
+                                  sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                                  randomwalk2_cpp(r, kappaR) +
+                                  seasonalComp2_cpp(s, kappaS, SMat) +
+                                  logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(1,2,5,6,7)){
         if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0)){
           logDensProposal[i]<- NA
         }else{
@@ -309,23 +499,18 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
           B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
           intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
-          if(Modeltype %in% c(1,2,5,6,7)){
-            JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }else if(Modeltype %in% c(3,4)){
-            JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
-                    sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
-                    randomwalk2_cpp(r, kappaR) +
-                    seasonalComp2_cpp(s, kappaS, SMat) +
-                    logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
-                  - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
+                                  sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                                  randomwalk2_cpp(r, kappaR) +
+                                  seasonalComp2_cpp(s, kappaS, SMat) +
+                                  logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }
     }
@@ -364,7 +549,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
         if(Modeltype %in% c(1,2,5,6,7)){
-          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
           JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
           JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
         }else if(Modeltype %in% c(3,4)){
@@ -407,7 +592,67 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) -
                                   mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
         }
-      }else{
+      }else if(Modeltype %in% c(5,6) && nstrain>2){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || theta[length(theta)]<0){
+          logDensProposal[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
+                                  sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                                  randomwalk2_cpp(r, kappaR) +
+                                  seasonalComp2_cpp(s, kappaS, SMat) +
+                                  logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(3,4)){
+        if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0) || any(abs(theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)])>1)){
+          logDensProposal[i]<- NA
+        }else{
+          kappaR<- theta[num_Gammas+1]
+          Q_r<- kappaR * RW2PrecMat
+          kappaS<- theta[num_Gammas+2]
+          Q_s <- kappaS * SMat
+          kappaU<- theta[num_Gammas+3]
+          Q_u<- kappaU * R
+          Gammas<- theta[1:num_Gammas]
+          r<- theta[num_Gammas+3+(1:time)]
+          s<- theta[num_Gammas+3+time+(1:12)]
+          u<- theta[num_Gammas+3+time+12+(1:ndept)]
+          B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
+          intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
+          logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
+                                  sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
+                                  randomwalk2_cpp(r, kappaR) +
+                                  seasonalComp2_cpp(s, kappaS, SMat) +
+                                  logIGMRF1_cpp(u, kappaU, R, rankdef) +
+                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+        }
+      }else if(Modeltype %in% c(1,2,5,6,7)){
         if(any(theta[1:num_Gammas] <= 0) || any(theta[1:num_Gammas] >= 1) || any(theta[num_Gammas+(1:3)] <= 0)){
           logDensProposal[i]<- NA
         }else{
@@ -424,23 +669,18 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
           B<- theta[num_Gammas+3+time+12+ndept+(1:nstrain)]
           intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
-          if(Modeltype %in% c(1,2,5,6,7)){
-            JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }else if(Modeltype %in% c(3,4)){
-            JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
-            JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-            JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-          }
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
+          JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
+          JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
+
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
                                   sum(dgamma(c(kappaR, kappaS), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE)) -
-                                  mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+                                  sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }
     }
@@ -463,7 +703,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                                        mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+                                        - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
       }else{
         kappaR<- theta[num_Gammas+1]
         Q_r<- kappaR * RW2PrecMat
@@ -479,7 +719,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         intercepts<- theta[num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
 
         if(Modeltype %in% c(1,2,5,6,7)){
-          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, nstrain, theta[length(theta)], Modeltype)
           JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
           JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
         }else if(Modeltype %in% c(3,4)){
@@ -493,8 +733,8 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                                        sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE)) -
-                                        mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
+                                        sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                                      - mvtnorm::dmvt(theta, delta = mu, sigma = varcov, df = 3, log = TRUE))
       }
     }
   }

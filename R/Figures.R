@@ -1069,19 +1069,19 @@ RecoverInfUABGcop.plotGauss <- function(inf.object, true_u, true_a_k, true_B, tr
           axis.text = element_text(size = 16),
           legend.position = "none")
 
-  return(list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c))
-#  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c)
-#  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
-                           #                           labels = c("A", "B", "C", "D","E"),
+#  return(list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c))
+  plotlists <- list(rfigs_u, rfigs_ak, rfigs_B, rfigs_G, rfigs_c)
+  print(cowplot::plot_grid(plotlist = plotlists, ncol = 5,
+                                                      labels = c("A", "B", "C", "D","E"),
 #                           labels = c("E", "", "", "",""),
                            #                           rel_widths = c(1, 1, 1, 0.7, 1.4), label_size = 25)),
-#                           rel_widths = c(1, 0.7, 0.7, 1.2, 1.3), label_size = 25))
+                          rel_widths = c(1, 0.7, 0.7, 1.2, 1.3), label_size = 25))
 
 
   # Legends
-  #  add_legend(0.85, 1.15, legend = "Truth",
-  #             pch = 19, col = "black",
-  #             horiz = TRUE, bty = 'n', cex = 1.8)
+    add_legend(0.85, 1.15, legend = "Truth",
+               pch = 19, col = "black",
+               horiz = TRUE, bty = 'n', cex = 1.8)
   #  add_legend("topleft", legend = substitute(paste(bold(Modeltype))),
   #             horiz = TRUE, bty = 'n', cex = 1.5)
 }
