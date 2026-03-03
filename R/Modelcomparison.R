@@ -29,7 +29,7 @@ modelevidenceLP <- function(theta, dataset) {
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     jointTPM<- JointTPM
   }else if(dataset$Modeltype %in% c(3,4)){
-    copulaParam <- theta[startsWith(names(theta), "c")]
+    copulaParam <- theta[startsWith(names(theta), "F")]
     JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype, dataset$gh)
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
@@ -140,7 +140,7 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
     inf.object<- inf.object[, !(startsWith(colnames(inf.object), "G") |
                                                  startsWith(colnames(inf.object), "B"))]
   }else if(Modeltype %in% c(3,4)){
-    inf.object<- inf.object[, !(startsWith(colnames(inf.object), "F"))]
+    inf.object<- inf.object[, !(startsWith(colnames(inf.object), "c"))]
   }
 
   Model<- ifelse(Modeltype>0,1,0)
@@ -167,8 +167,8 @@ if(Modeltype %in% c(1,2,7)){
   lb[startsWith(names(lb), "B")]<- 0
   lb[startsWith(names(lb), "G")]<- 0
   ub[startsWith(names(ub), "G")]<- 1
-  lb[startsWith(names(lb), "c")]<- -1
-  ub[startsWith(names(ub), "c")]<- 1
+  lb[startsWith(names(lb), "F")]<- -1
+  ub[startsWith(names(ub), "F")]<- 1
 }else if(Modeltype %in% c(5,6) && nstrain>2){
   lb[startsWith(names(lb), "B")]<- 0
   lb[startsWith(names(lb), "G")]<- 0
