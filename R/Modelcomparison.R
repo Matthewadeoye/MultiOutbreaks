@@ -21,8 +21,8 @@ modelevidenceLP <- function(theta, dataset) {
 
   if(dataset$Modeltype==0){
     B<- rep(0, dataset$nstrain)
-    jointTPM<- matrix(0, dataset$nstate, 2^dataset$nstate)
-  }else if(dataset$Modeltype %in% c(1,2,5,6,7)){
+    jointTPM<- matrix(0, dataset$nstate, dataset$nstate)
+  }else if(dataset$Modeltype %in% c(1,2,5,6)){
     copulaParam <- theta[startsWith(names(theta), "c")]
     JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
@@ -34,6 +34,12 @@ modelevidenceLP <- function(theta, dataset) {
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     jointTPM<- JointTPM
+  }else if(dataset$Modeltype ==7){
+    copulaParam <- theta[startsWith(names(theta), "c")]
+    JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
+    jointTPM <- pmax(JointTPM, 1e-8)
+    jointTPM <- jointTPM / rowSums(jointTPM)
+    jointTPM <- jointTPM
   }
 
   log_lik <- SMOOTHINGgradmultstrainLoglikelihood_cpp(y = dataset$y,e_it = dataset$e_it,nstrain = dataset$nstrain,r = r,s = s,u = u,jointTPM = jointTPM,B = B,Bits = dataset$Bits,a_k = a_k,Model = dataset$Modeltype,Q_r = Q_r,Q_s = Q_s,Q_u = Q_u,gradients = 0,Qstz_r = dataset$Qstz_r,Qstz_s = dataset$Qstz_s,Qstz_u = dataset$Qstz_u,y_total = dataset$y_total)$loglike
@@ -51,8 +57,12 @@ modelevidenceLP <- function(theta, dataset) {
   # a_k prior (with Jacobian)
     log_prior <- log_prior + sum(dgamma(exp(a_k), shape=0.01, rate=0.01/exp(-15),log=TRUE) + a_k)
 
-  if(dataset$Modeltype>0){
+  if(dataset$Modeltype %in% c(1,2,3,4,5,6)){
     log_prior <- log_prior + sum(dbeta(Gammas,dataset$shape1params,dataset$shape2params,log=TRUE))
+  }else if(dataset$Modeltype==7){
+    for(n in 1:dataset$nstate){
+    log_prior <- log_prior + log(gtools::ddirichlet(jointTPM[n,], rep(1/dataset$nstate, dataset$nstate)))
+    }
   }
 
   return(log_lik + log_prior)
@@ -106,14 +116,14 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
     y_total<- y_total
   }
 
-  if(Modeltype %in% c(0,1,3,5)){
+  if(Modeltype %in% c(0,1,3,5,7)){
     num_Gammas<- 2
     shape1params<- rep(2, num_Gammas)
-    shape2params<- rep(c(11,2),num_Gammas)
+    shape2params<- rep(c(11, 2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     shape1params<- rep(2, num_Gammas)
-    shape2params<- rep(c(11,2),num_Gammas)
+    shape2params<- rep(c(11, 2),num_Gammas)
   }
 
   dataset<- list(
@@ -139,7 +149,7 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
   if(Modeltype==0){
     inf.object<- inf.object[, !(startsWith(colnames(inf.object), "G") |
                                                  startsWith(colnames(inf.object), "B"))]
-  }else if(Modeltype %in% c(3,4)){
+  }else if(Modeltype %in% c(3, 4)){
     inf.object<- inf.object[, !(startsWith(colnames(inf.object), "c"))]
   }
 
@@ -176,7 +186,7 @@ if(Modeltype %in% c(1,2,7)){
   lb[startsWith(names(lb), "c")]<- 0
 }
 
-  bridge_result <- bridgesampling::bridge_sampler(samples = samples,log_posterior = modelevidenceLP,data = dataset,lb = lb,ub = ub)
+  bridge_result <- bridgesampling::bridge_sampler(samples = samples,log_posterior = modelevidenceLP, data = dataset, lb = lb, ub = ub)
 
   return(bridge_result)
 }
