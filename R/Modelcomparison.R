@@ -69,7 +69,7 @@ modelevidenceLP <- function(theta, dataset) {
 }
 
 
-ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.object, y_total=NULL){
+ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.object, y_total=NULL, cores=1){
   ndept <- nrow(e_it)
   time <- ncol(e_it)
   nstrain<- dim(y)[3]
@@ -186,7 +186,7 @@ if(Modeltype %in% c(1,2,7)){
   lb[startsWith(names(lb), "c")]<- 0
 }
 
-  bridge_result <- bridgesampling::bridge_sampler(samples = samples,log_posterior = modelevidenceLP, data = dataset, lb = lb, ub = ub)
+  bridge_result <- bridgesampling::bridge_sampler(samples = samples,log_posterior = modelevidenceLP, data = dataset, lb = lb, ub = ub, cores = cores)
 
   return(bridge_result)
 }
