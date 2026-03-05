@@ -425,12 +425,13 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
 ##############################################################################################################################################################################
         #Joint Transition probabilities and FactorLoadings update when posterior is less sensitive to individual update
-        proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
+        randNoise<- rnorm(1)
+        proposedGs<- abs(MC_chain[i,1:num_Gammas] + sdGsJoint * randNoise)
+        LAMBDAS_prop <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)] + sdLambdasJoint * randNoise
+
         proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
-        LAMBDAS_prop <- rnorm(nstrain, mean = MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], sd = sdLambdas)
-
-        priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+        priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
         priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, LAMBDAS_prop, Modeltype, gh)
