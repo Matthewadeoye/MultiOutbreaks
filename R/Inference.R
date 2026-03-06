@@ -418,27 +418,18 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         }
 
 ##############################################################################################################################################################################
-        #Joint Transition probabilities and FactorLoadings update when posterior is less sensitive to individual update
-        proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i,1:num_Gammas], sd=sdGsJoint))
-        proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
-
+        #FactorLoadings update when posterior is less sensitive to individual update
         eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
         eta_prop <- rnorm(n_factloadings, eta, sdLambdasJoint)
         LAMBDAS_prop <- tanh(eta_prop)
         LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
-        priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
-        priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
-
-        JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, LAMBDAS_prop, Modeltype, gh)
+        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
         JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
         if(any(!is.finite(JointTPM1))){
-          MC_chain[i, 1:num_Gammas]<- MC_chain[i,1:num_Gammas]
-          if(RM_Gs && i<burn_in) {sdGsJoint= sdGsJoint * exp((RMdelta/i) * (0 - 0.234))}
-          sdGs<- max(sdGs, 1e-6)
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           if(RM_Lambdas && i<burn_in) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (0 - 0.234))}
           sdLambdasJoint<- max(sdLambdasJoint, 1e-6)
@@ -448,22 +439,19 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioGC<- exp(likelihoodproposed + priorproposedGs + sum(log(1 - LAMBDAS_prop^2))
-                           - likelihoodcurrent - priorcurrentGs - sum(log(1 - LAMBDAS_current^2)))
+          mh.ratioGC<- exp(likelihoodproposed + sum(log(1 - LAMBDAS_prop^2))
+                           - likelihoodcurrent - sum(log(1 - LAMBDAS_current^2)))
 
           #print(mh.ratioGC)
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
-            MC_chain[i, 1:num_Gammas]<- proposedGs
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
             likelihoodcurrent<- likelihoodproposed
             JointTPM<- JointTPM1
           }
           else{
-            MC_chain[i, 1:num_Gammas]<- MC_chain[i,1:num_Gammas]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
-          if(RM_Gs && i<burn_in && !is.na(mh.ratioGC)) {sdGsJoint= sdGsJoint * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
           if(RM_Lambdas && i<burn_in && !is.na(mh.ratioGC)) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
         }
 ######################################################################################################################################################################################
