@@ -118,7 +118,7 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
 
   if(Modeltype %in% c(0,1,3,5,7)){
     num_Gammas<- 2
-    shape1params<- rep(2, num_Gammas)
+    shape1params<- rep(c(1,2), num_Gammas)
     shape2params<- rep(c(11, 2),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
@@ -262,7 +262,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
   }
-  shape1params<- rep(c(2, 2), num_Gammas)
+  shape1params<- rep(c(1, 2), num_Gammas)
   shape2params<- rep(c(11, 2), num_Gammas)
 
   if(cond){
@@ -586,7 +586,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
   }
-  shape1params<- rep(c(2, 2), num_Gammas)
+  shape1params<- rep(c(1, 2), num_Gammas)
   shape2params<- rep(c(11, 2), num_Gammas)
 
   if(cond){
