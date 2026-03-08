@@ -290,6 +290,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       mh.ratio<- exp(likelihoodproposed + priorproposedB
                      - likelihoodcurrent - priorcurrentB)
 
+      #print(paste("mh.ratioB = ", mh.ratio))
+
       if(!is.na(mh.ratio) && runif(1) < mh.ratio){
         MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedB
         likelihoodcurrent<- likelihoodproposed
@@ -300,9 +302,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       if(RM_Bs && i<burn_in && !is.na(mh.ratio)) {sdBs= sdBs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
 
       if(Modeltype %in% c(1,2)){
-        currentGs<- qlogis(MC_chain[i-1,1:num_Gammas])
-        proposedGs<- rnorm(num_Gammas,mean=currentGs, sd=rep(sdGs, num_Gammas))
-        proposedGs<- plogis(proposedGs)
+        proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
+        proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
         priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
         priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
@@ -317,9 +318,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
         likelihoodproposed<- Allquantities$loglike
 
-        mh.ratio<- exp(likelihoodproposed + priorproposedGs - likelihoodcurrent - priorcurrentGs
-                       + sum(log(MC_chain[i-1,1:num_Gammas]*(1-MC_chain[i-1,1:num_Gammas])))
-                       - sum(log(proposedGs*(1-proposedGs))))
+        mh.ratio<- exp(likelihoodproposed + priorproposedGs
+                       - likelihoodcurrent - priorcurrentGs)
+
+        #print(mh.ratio)
 
         if(!is.na(mh.ratio) && runif(1) < mh.ratio){
           MC_chain[i, 1:num_Gammas]<- proposedGs
@@ -333,9 +335,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         if(RM_Gs && i<burn_in && !is.na(mh.ratio)) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
       }else if(Modeltype %in% c(3,4)){
         #Transition probabilities update
-        currentGs<- qlogis(MC_chain[i-1,1:num_Gammas])
-        proposedGs<- rnorm(num_Gammas,mean=currentGs, sd=rep(sdGs, num_Gammas))
-        proposedGs<- plogis(proposedGs)
+        proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
+        proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
         priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
         priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
@@ -355,9 +356,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioGC<- exp(likelihoodproposed + priorproposedGs - likelihoodcurrent - priorcurrentGs
-                           + sum(log(MC_chain[i-1,1:num_Gammas]*(1-MC_chain[i-1,1:num_Gammas])))
-                           - sum(log(proposedGs*(1-proposedGs))))
+          mh.ratioGC<- exp(likelihoodproposed + priorproposedGs
+                           - likelihoodcurrent - priorcurrentGs)
+
+          #print(mh.ratioGC)
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, 1:num_Gammas]<- proposedGs
@@ -399,6 +401,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               mh.ratioL<- exp(likelihoodproposed + log(1 - LAMBDAS_prop[l]^2)
                               - likelihoodcurrent - log(1 - LAMBDAS_current^2))
 
+              #print(mh.ratioGC)
+
               if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
                 LAMBDAS[l]<- LAMBDAS_prop[l]
@@ -438,6 +442,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           mh.ratioGC<- exp(likelihoodproposed + sum(log(1 - LAMBDAS_prop^2))
                            - likelihoodcurrent - sum(log(1 - LAMBDAS_current^2)))
 
+          #print(mh.ratioGC)
+
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
             likelihoodcurrent<- likelihoodproposed
@@ -454,9 +460,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         grad_current <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
         likelihoodcurrent<- Allquantities$loglike
       }else if(Modeltype %in% c(5,6)){
-        currentGs<- qlogis(MC_chain[i-1,1:num_Gammas])
-        proposedGs<- rnorm(num_Gammas,mean=currentGs, sd=rep(sdGs, num_Gammas))
-        proposedGs<- plogis(proposedGs)
+        proposedGs<- abs(rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas)))
+        proposedGs<- ifelse(proposedGs<1, proposedGs, 2-proposedGs)
 
         priorcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
         priorproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params, shape2 = shape2params, log=TRUE))
@@ -475,9 +480,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratio<- exp(likelihoodproposed + priorproposedGs - likelihoodcurrent - priorcurrentGs
-                         + sum(log(MC_chain[i-1,1:num_Gammas]*(1-MC_chain[i-1,1:num_Gammas])))
-                         - sum(log(proposedGs*(1-proposedGs))))
+          mh.ratio<- exp(likelihoodproposed + priorproposedGs
+                           - likelihoodcurrent - priorcurrentGs)
+
+          #print(mh.ratio)
 
           if(!is.na(mh.ratio) && runif(1) < mh.ratio){
             MC_chain[i, 1:num_Gammas]<- proposedGs
@@ -514,6 +520,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           mh.ratio<- exp(likelihoodproposed - likelihoodcurrent)
 
+          #print(mh.ratio)
+
           if(!is.na(mh.ratio) && runif(1) < mh.ratio){
             likelihoodcurrent<- likelihoodproposed
             JointTPM<- JointTPM1
@@ -548,6 +556,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           mh.ratio<- exp(likelihoodproposed + priorproposedGs + proposalcurrentproposedGs
                          - likelihoodcurrent - priorcurrentGs - proposalproposedGs)
+
+          #print(mh.ratio)
 
           if(!is.na(mh.ratio) && runif(1) < mh.ratio){
             MC_chain[i, (index:(n*nstate))]<- as.numeric(JointTPM1[n, ])

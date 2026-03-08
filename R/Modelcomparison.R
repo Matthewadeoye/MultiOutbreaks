@@ -184,6 +184,10 @@ if(Modeltype %in% c(1,2,7)){
   lb[startsWith(names(lb), "G")]<- 0
   ub[startsWith(names(ub), "G")]<- 1
   lb[startsWith(names(lb), "c")]<- 0
+}else if(Modeltype %in% c(5,6)){
+  lb[startsWith(names(lb), "B")]<- 0
+  lb[startsWith(names(lb), "G")]<- 0
+  ub[startsWith(names(ub), "G")]<- 1
 }
 
   bridge_result <- bridgesampling::bridge_sampler(samples = samples,log_posterior = modelevidenceLP, data = dataset, lb = lb, ub = ub, cores = cores)
