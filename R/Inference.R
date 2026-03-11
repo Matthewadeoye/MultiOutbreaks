@@ -142,7 +142,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
     MC_chain[i,num_Gammas+1]<- rgamma(1, shape = 1 + (time-2)/2, rate = 0.0001 + (t(MC_chain[i-1, num_Gammas+3+(1:time)]) %*% RW2PrecMat %*% MC_chain[i-1, num_Gammas+3+(1:time)])/2)
     MC_chain[i,num_Gammas+2]<- rgamma(1, shape = 1 + 11/2, rate = 0.001 + (t(MC_chain[i-1, num_Gammas+3+time+(1:12)]) %*% RW1PrecMat %*% MC_chain[i-1, num_Gammas+3+time+(1:12)])/2)
-    MC_chain[i,num_Gammas+3]<- rgamma(1, shape = 1 + (ndept-1)/2, rate = 0.01 + (t(MC_chain[i-1, num_Gammas+3+time+12+(1:ndept)]) %*% R %*% MC_chain[i-1, num_Gammas+3+time+12+(1:ndept)])/2)
+    MC_chain[i,num_Gammas+3]<- rgamma(1, shape = 1 + (ndept-1)/2, rate = 0.1 + (t(MC_chain[i-1, num_Gammas+3+time+12+(1:ndept)]) %*% R %*% MC_chain[i-1, num_Gammas+3+time+12+(1:ndept)])/2)
 
     Q_r<- MC_chain[i,num_Gammas+1] * RW2PrecMat
     Q_s<- MC_chain[i,num_Gammas+2] * RW1PrecMat
@@ -750,7 +750,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
 
     MC_chain[i,num_Gammas+1]<- rgamma(1, shape = 1 + (time-2)/2, rate = 0.0001 + (t(current_r) %*% RW2PrecMat %*% current_r)/2)
     MC_chain[i,num_Gammas+2]<- rgamma(1, shape = 1 + 11/2, rate = 0.001 + (t(current_s) %*% RW1PrecMat %*% current_s)/2)
-    MC_chain[i,num_Gammas+3]<- rgamma(1, shape = 1 + (ndept-1)/2, rate = 0.01 + (t(current_u) %*% R %*% current_u)/2)
+    MC_chain[i,num_Gammas+3]<- rgamma(1, shape = 1 + (ndept-1)/2, rate = 0.1 + (t(current_u) %*% R %*% current_u)/2)
 
     Q_r<- MC_chain[i,num_Gammas+1] * RW2PrecMat
     Q_s<- MC_chain[i,num_Gammas+2] * RW1PrecMat
