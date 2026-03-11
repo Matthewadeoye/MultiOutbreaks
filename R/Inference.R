@@ -694,7 +694,7 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0.1, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
-    shape1params<- rep(2, num_Gammas)
+    shape1params<- rep(c(1,2), num_Gammas)
     shape2params<- rep(c(11,2),num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
@@ -737,11 +737,11 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
   current_strans<- t(Qstz_s) %*% MC_chain[1, num_Gammas+3+time+(1:12)]
   current_utrans<- t(Qstz_u) %*% MC_chain[1, num_Gammas+3+time+12+(1:ndept)]
 
-
   deltaP<- 1
   RMdelta<- 1/(0.234*(1-0.234))  #for Betas, Gammas
   RMLdelta<- 1/(0.44*(1-0.44))   #for factor_loadings
   sdLambdas<- rep(sdLambdas, nstrain)
+  sdLambdasJoint<- sdLambdas
 
   for (i in 2:num_iteration) {
     current_r <- MC_chain[i-1, num_Gammas+3+(1:time)]
@@ -945,19 +945,15 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
         }
 
         #Factor loadings update
-        LAMBDAS<- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+        LAMBDAS<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
         for(l in 1:n_factloadings){
 
         LAMBDAS_prop <- LAMBDAS
-        LAMBDAS_prop[l] <- rnorm(1, mean = LAMBDAS[l], sd = sdLambdas[l])
-
-        if(abs(LAMBDAS_prop[l]) > 1){
-          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
-          LAMBDAS[l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
-          if(RM_Lambdas && i<burn_in) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (0 - 0.44))}
-          sdLambdas[l] <- max(sdLambdas[l], 1e-6)
-        }else{
+        eta <- atanh(LAMBDAS[l])
+        eta_prop <- rnorm(1, eta, sdLambdas[l])
+        LAMBDAS_prop[l] <- tanh(eta_prop)
+        LAMBDAS_current <- LAMBDAS[l]
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -974,10 +970,8 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioL<- exp(likelihoodproposed
-                           - likelihoodcurrent)
-
-          #print(mh.ratioGC)
+          mh.ratioL<- exp(likelihoodproposed + log(1 - LAMBDAS_prop[l]^2)
+                          - likelihoodcurrent - log(1 - LAMBDAS_current^2))
 
           if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
@@ -991,8 +985,43 @@ FFBS_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,
           }
           if(RM_Lambdas && i<burn_in && !is.na(mh.ratioL)) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))}
             }
-          }
         }
+
+        #Joint FactorLoadings update when posterior is less sensitive to individual update
+        eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+        eta_prop <- rnorm(n_factloadings, eta, sdLambdasJoint)
+        LAMBDAS_prop <- tanh(eta_prop)
+        LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+
+        JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
+
+        JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
+        JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
+
+        if(any(!is.finite(JointTPM1))){
+          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+          if(RM_Lambdas && i<burn_in) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (0 - 0.234))}
+          sdLambdasJoint<- max(sdLambdasJoint, 1e-6)
+        }else{
+
+          Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
+
+          likelihoodproposed<- Allquantities$loglike
+
+          mh.ratioGC<- exp(likelihoodproposed + sum(log(1 - LAMBDAS_prop^2))
+                           - likelihoodcurrent - sum(log(1 - LAMBDAS_current^2)))
+
+          if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
+            likelihoodcurrent<- likelihoodproposed
+            JointTPM<- JointTPM1
+          }
+          else{
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+          }
+          if(RM_Lambdas && i<burn_in && !is.na(mh.ratioGC)) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
+        }
+
         Allquantities<- FFBSgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)
         grad_current <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
         likelihoodcurrent<- Allquantities$loglike
