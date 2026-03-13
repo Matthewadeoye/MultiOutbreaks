@@ -46,7 +46,7 @@ modelevidenceLP <- function(theta, dataset) {
 
   log_prior <- 0
 
-  log_prior <- log_prior + dgamma(kappaR,1,0.0001,log=TRUE) + dgamma(kappaS,1,0.001, log=TRUE) + dgamma(kappaU,1,0.1,  log=TRUE)
+  log_prior <- log_prior + dgamma(kappaR,1,0.0001,log=TRUE) + dgamma(kappaS,1,0.001, log=TRUE) + dgamma(kappaU,1,0.01,  log=TRUE)
 
   log_prior <- log_prior + randomwalk2_cpp(r, kappaR) + seasonalComp2_cpp(s, kappaS, dataset$SMat) +logIGMRF1_cpp(u, kappaU, dataset$R, dataset$rankdef)
 
@@ -290,7 +290,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
           B<- 0
           intercepts<- theta[3+time+12+ndept+(1:nstrain)]
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
-            sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+            sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
             randomwalk2_cpp(r, kappaR) +
             seasonalComp2_cpp(s, kappaS, SMat) +
             logIGMRF1_cpp(u, kappaU, R, rankdef) -
@@ -319,7 +319,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -349,7 +349,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
             sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-            sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+            sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
             randomwalk2_cpp(r, kappaR) +
             seasonalComp2_cpp(s, kappaS, SMat) +
             logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -379,7 +379,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -407,7 +407,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
           B<- 0
           intercepts<- theta[3+time+12+ndept+(1:nstrain)]
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) -
@@ -436,7 +436,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -466,7 +466,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -496,7 +496,7 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
 
           a[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -614,7 +614,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
           B<- 0
           intercepts<- theta[3+time+12+ndept+(1:nstrain)]
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) -
@@ -643,7 +643,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                     sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                    sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -673,7 +673,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -703,7 +703,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -727,7 +727,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         B<- 0
         intercepts<- theta[3+time+12+ndept+(1:nstrain)]
         logDensPosterior[j-post.s]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
-                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -757,7 +757,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         }
         logDensPosterior[j-post.s]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                         sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -784,7 +784,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
           B<- 0
           intercepts<- theta[3+time+12+ndept+(1:nstrain)]
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) -
@@ -813,7 +813,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -843,7 +843,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -873,7 +873,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
 
           logDensProposal[i]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                   sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                  sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                   randomwalk2_cpp(r, kappaR) +
                                   seasonalComp2_cpp(s, kappaS, SMat) +
                                   logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -897,7 +897,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         B<- 0
         intercepts<- theta[3+time+12+ndept+(1:nstrain)]
         logDensPosterior[j-post.s]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
-                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
@@ -927,7 +927,7 @@ ModelEvidence_Bridge<- function(y, e_it, adjmat, Modeltype,inf.object, num_sampl
         }
         logDensPosterior[j-post.s]<- (SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=r, s=s, u=u, jointTPM=JointTPM, B=B, Bits=Bits, a_k=intercepts, Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u,y_total=y_total)$loglike +
                                         sum(dbeta(Gammas, shape1 = shape1params, shape2 = shape2params, log = TRUE)) +
-                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.1), log = TRUE)) +
+                                        sum(dgamma(c(kappaR, kappaS, kappaU), shape = c(1, 1, 1), rate = c(0.0001, 0.001, 0.01), log = TRUE)) +
                                         randomwalk2_cpp(r, kappaR) +
                                         seasonalComp2_cpp(s, kappaS, SMat) +
                                         logIGMRF1_cpp(u, kappaU, R, rankdef) +
