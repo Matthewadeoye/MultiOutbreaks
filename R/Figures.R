@@ -1370,3 +1370,23 @@ simulation_heat_maps<- function(Truth_arraylist, matrix_arraylist, Outbreaktype=
 
   dev.off()
 }
+
+
+#Overlay 2 posterior distributions
+Overlay2posteriors_fig<- function(x, y, histogram=F, burn_in=0){
+  if(histogram){
+    par(mfrow=c(3, 3))
+    for (i in 1:ncol(x)){
+      hist(x[-(1:burn_in), i], main = colnames(x)[i], col = adjustcolor("red", alpha.f = 0.5), xlab ="", xlim = range(c(x[,i], y[,i])))
+      hist(y[-(1:burn_in), i], col = adjustcolor("blue", alpha.f = 0.5), add = TRUE)
+      grid()
+    }
+  }else{
+    par(mfrow=c(3, 3))
+    for (i in 1:ncol(x)) {
+      plot(x[, i], type = "l", main = colnames(x)[i], xlab ="MCMC iterations", ylab = "", col = adjustcolor("red", alpha.f = 0.5), ylim = range(c(x[,i], y[,i])))
+      lines(1:nrow(y), y[, i], col = adjustcolor("blue", alpha.f = 0.5))
+      grid()
+    }
+  }
+}

@@ -13,11 +13,15 @@ modelevidenceLP <- function(theta, dataset) {
   B   <- theta[startsWith(names(theta), "B")]
   a_k <- theta[startsWith(names(theta), "a")]
 
+  OutbreakPrior_ExpectationMatrix<- matrix(c(11/12,1/12,6/12,6/12), nrow = 2, byrow = T)
+  Dirichlet_Prior<- 12 * JointTransitionMatrix_arma_cpp(OutbreakPrior_ExpectationMatrix, dataset$nstrain)
 
   #gammas
   if(dataset$Modeltype %in% c(1,2,3,4,5,6,7)){
     Gammas <- theta[startsWith(names(theta), "G")]
   }
+
+  log_prior <- 0
 
   if(dataset$Modeltype==0){
     B<- rep(0, dataset$nstrain)
@@ -25,6 +29,11 @@ modelevidenceLP <- function(theta, dataset) {
   }else if(dataset$Modeltype %in% c(1,2,5,6)){
     copulaParam <- theta[startsWith(names(theta), "c")]
     JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
+    if(dataset$Modeltype %in% c(5,6) && dataset$nstrain==2){
+      log_prior <- log_prior + dnorm(copulaParam, mean = 0, sd=100, log = TRUE)
+    }else if(dataset$Modeltype %in% c(5,6) && dataset$nstrain>2){
+      log_prior <- log_prior + dexp(copulaParam, rate=0.5, log = TRUE)
+    }
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     jointTPM<- JointTPM
@@ -44,8 +53,6 @@ modelevidenceLP <- function(theta, dataset) {
 
   log_lik <- SMOOTHINGgradmultstrainLoglikelihood_cpp(y = dataset$y,e_it = dataset$e_it,nstrain = dataset$nstrain,r = r,s = s,u = u,jointTPM = jointTPM,B = B,Bits = dataset$Bits,a_k = a_k,Model = dataset$Modeltype,Q_r = Q_r,Q_s = Q_s,Q_u = Q_u,gradients = 0,Qstz_r = dataset$Qstz_r,Qstz_s = dataset$Qstz_s,Qstz_u = dataset$Qstz_u,y_total = dataset$y_total)$loglike
 
-  log_prior <- 0
-
   log_prior <- log_prior + dgamma(kappaR,1,0.0001,log=TRUE) + dgamma(kappaS,1,0.001, log=TRUE) + dgamma(kappaU,1,0.01,  log=TRUE)
 
   log_prior <- log_prior + randomwalk2_cpp(r, kappaR) + seasonalComp2_cpp(s, kappaS, dataset$SMat) +logIGMRF1_cpp(u, kappaU, dataset$R, dataset$rankdef)
@@ -61,7 +68,7 @@ modelevidenceLP <- function(theta, dataset) {
     log_prior <- log_prior + sum(dbeta(Gammas,dataset$shape1params,dataset$shape2params,log=TRUE))
   }else if(dataset$Modeltype==7){
     for(n in 1:dataset$nstate){
-    log_prior <- log_prior + log(gtools::ddirichlet(jointTPM[n,], rep(1/dataset$nstate, dataset$nstate)))
+    log_prior <- log_prior + log(gtools::ddirichlet(jointTPM[n,], Dirichlet_Prior[n, ]))
     }
   }
 
@@ -118,12 +125,12 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
 
   if(Modeltype %in% c(0,1,3,5,7)){
     num_Gammas<- 2
-    shape1params<- rep(c(1,2), num_Gammas)
-    shape2params<- rep(c(11, 2),num_Gammas)
+    shape1params<- rep(c(1,6), num_Gammas)
+    shape2params<- rep(c(11, 6),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
-    shape1params<- rep(2, num_Gammas)
-    shape2params<- rep(c(11, 2),num_Gammas)
+    shape1params<- rep(c(1,6), num_Gammas)
+    shape2params<- rep(c(11, 6),num_Gammas)
   }
 
   dataset<- list(
@@ -323,7 +330,8 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE)) +
+                    ifelse(Modeltype %in% c(5,6), dnorm(theta[length(theta)], mean = 0, sd=100, log = TRUE), 0)
                   - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }else if(Modeltype %in% c(3,4)){
@@ -383,7 +391,8 @@ ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5
                     randomwalk2_cpp(r, kappaR) +
                     seasonalComp2_cpp(s, kappaS, SMat) +
                     logIGMRF1_cpp(u, kappaU, R, rankdef) +
-                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE))
+                    sum(dgamma(B, shape = rep(2, length(B)), rate = rep(2, length(B)), log = TRUE)) +
+                    ifelse(Modeltype %in% c(5,6), dexp(copulaParam, rate=0.5, log = TRUE), 0)
                   - mvnfast::dmvt(theta, mu = mu, sigma = varcov, df = 3, log = TRUE))
         }
       }
