@@ -593,7 +593,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
           }else{
-          JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)], Modeltype)
+            if(Modeltype %in% c(3,4)){
+              JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
+            }else{
+              JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)], Modeltype)
+            }
 
           JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
           JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
@@ -608,6 +612,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           priorcurrentB<- sum(dgamma(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
           priorproposedB<- sum(dgamma(proposedJcomps[num_Gammas+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
 
+          priorcurrentAks <- sum(dgamma(exp(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]),
+                                        shape=0.01, rate=0.01/exp(-15), log=TRUE) + MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+          priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
+                                         shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
+
           proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
           proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
 
@@ -615,8 +624,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + proposalcurrentJcomps
-                          - likelihoodcurrent - priorcurrentGs - priorcurrentB - proposalproposedJcomps)
+          mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + proposalcurrentJcomps
+                          - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - proposalproposedJcomps)
 
           if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
             MC_chain[i,1:num_Gammas]<- proposedJcomps[1:num_Gammas]
