@@ -2,7 +2,7 @@
 SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,"s"=0.3,"u"=0.3),
                                num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.002,
                                y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE, RM_Cop=TRUE, RM_Lambdas=TRUE,
-                               burn_in=5000){
+                               burn_in=5000, beta_param1=1, beta_param2=1){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -394,8 +394,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
               likelihoodproposed<- Allquantities$loglike
 
-              priorcurrentLAMBDA <- dbeta((LAMBDAS_current + 1)/2, 1.7, 1.7, log=TRUE)
-              priorproposedLAMBDA <- dbeta((LAMBDAS_prop[l] + 1)/2, 1.7, 1.7, log=TRUE)
+              priorcurrentLAMBDA <- dbeta((LAMBDAS_current + 1)/2, beta_param1, beta_param2, log=TRUE)
+              priorproposedLAMBDA <- dbeta((LAMBDAS_prop[l] + 1)/2, beta_param1, beta_param2, log=TRUE)
 
               mh.ratioL<- exp(likelihoodproposed + priorproposedLAMBDA + log(1 - LAMBDAS_prop[l]^2)
                               - likelihoodcurrent - priorcurrentLAMBDA - log(1 - LAMBDAS_current^2))
@@ -436,8 +436,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
-          priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+          priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
+          priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
 
           mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA + sum(log(1 - LAMBDAS_prop^2))
                            - likelihoodcurrent - priorcurrentLAMBDA - sum(log(1 - LAMBDAS_current^2)))
@@ -696,8 +696,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
                                              shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
 
-              priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
-              priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+              priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
+              priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
 
               proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
               proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
