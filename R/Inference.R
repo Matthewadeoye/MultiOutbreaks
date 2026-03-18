@@ -140,10 +140,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
   propShape<- 0.01+SumYk_vec
 
-  zigmaJ<- diag(0.1, num_Gammas+nstrain+nstrain)
-  optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain)
-  lambdaJ<- 1
-
   for (i in 2:num_iteration) {
 
     MC_chain[i,num_Gammas+1]<- rgamma(1, shape = 1 + (time-2)/2, rate = 0.0001 + (t(MC_chain[i-1, num_Gammas+3+(1:time)]) %*% RW2PrecMat %*% MC_chain[i-1, num_Gammas+3+(1:time)])/2)
@@ -398,8 +394,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
               likelihoodproposed<- Allquantities$loglike
 
-              mh.ratioL<- exp(likelihoodproposed + log(1 - LAMBDAS_prop[l]^2)
-                              - likelihoodcurrent - log(1 - LAMBDAS_current^2))
+              priorcurrentLAMBDA <- dbeta((LAMBDAS_current + 1)/2, 1.7, 1.7, log=TRUE)
+              priorproposedLAMBDA <- dbeta((LAMBDAS_prop[l] + 1)/2, 1.7, 1.7, log=TRUE)
+
+              mh.ratioL<- exp(likelihoodproposed + priorproposedLAMBDA + log(1 - LAMBDAS_prop[l]^2)
+                              - likelihoodcurrent - priorcurrentLAMBDA - log(1 - LAMBDAS_current^2))
 
               if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
@@ -437,8 +436,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioGC<- exp(likelihoodproposed + sum(log(1 - LAMBDAS_prop^2))
-                           - likelihoodcurrent - sum(log(1 - LAMBDAS_current^2)))
+          priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+          priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+
+          mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA + sum(log(1 - LAMBDAS_prop^2))
+                           - likelihoodcurrent - priorcurrentLAMBDA - sum(log(1 - LAMBDAS_current^2)))
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
@@ -576,9 +578,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         likelihoodcurrent<- Allquantities$loglike
       }
       #Joint update of gammas, intercepts, and regression parameters
-      if(!Modeltype %in% c(0,7)){
+      if(Modeltype %in% c(1,2)){
         #Adapting zigmaJ
         if(i==500){
+          optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain)
+          lambdaJ<- 1
           epsilonJ<- 0.07
           XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
@@ -593,11 +597,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
           }else{
-            if(Modeltype %in% c(3,4)){
-              JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)], Modeltype, gh)
-            }else{
-              JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)], Modeltype)
-            }
+          JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)], Modeltype)
 
           JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
           JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
@@ -649,6 +649,223 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           zigmaJ<- lambdaJ* optconstantJ * zigmaJ
             }
           }
+        }
+      }else if(Modeltype %in% c(3,4)){
+        #Adapting zigmaJ
+        if(i==500){
+          optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+n_factloadings)
+          lambdaJ<- 1
+          epsilonJ<- 0.07
+          eta <- atanh(MC_chain[1:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+          XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
+          XnbarJ <- colMeans(XnJ)
+          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+n_factloadings)
+          zigmaJ<- optconstantJ * zigmaJ
+        } else if (i > 500){
+          eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+          LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+
+          currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
+          proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
+          LAMBDAS_prop <- tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)])
+
+          if(any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1) || any(abs(LAMBDAS_prop)>1)){
+            MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+            MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]
+          }else{
+            JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedJcomps[1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
+
+            JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
+            JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
+            if(any(!is.finite(JointTPM1))){
+              MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+              MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]
+            }else{
+              priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+              priorproposedGs<- sum(dbeta(proposedJcomps[1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+
+              priorcurrentB<- sum(dgamma(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
+              priorproposedB<- sum(dgamma(proposedJcomps[num_Gammas+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
+
+              priorcurrentAks <- sum(dgamma(exp(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]),
+                                            shape=0.01, rate=0.01/exp(-15), log=TRUE) + MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+              priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
+                                             shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
+
+              priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+              priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(1.7,nstrain), rep(1.7,nstrain), log=TRUE))
+
+              proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
+              proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
+
+              Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=proposedJcomps[num_Gammas+(1:nstrain)], Bits=Bits, a_k=proposedJcomps[num_Gammas+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
+              grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
+              likelihoodproposed<- Allquantities$loglike
+
+              mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks +  priorproposedLAMBDA + proposalcurrentJcomps + sum(log(1 - LAMBDAS_prop^2))
+                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - priorcurrentLAMBDA - proposalproposedJcomps - sum(log(1 - LAMBDAS_current^2)))
+
+              if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
+                MC_chain[i,1:num_Gammas]<- proposedJcomps[1:num_Gammas]
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[num_Gammas+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[num_Gammas+nstrain+(1:nstrain)]
+                grad_current<- grad_proposed
+                JointTPM<- JointTPM1
+                likelihoodcurrent<- likelihoodproposed
+              }else{
+                MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+              }
+              eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+              LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+              currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
+
+              XnbarPrevJ <- XnbarJ
+              XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
+              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+n_factloadings))/i
+              #Robbins Munro tuning
+              lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+            }
+          }
+        }
+      }else if(Modeltype %in% c(5,6)){
+        #Adapting zigmaJ
+        if(i==500){
+          optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+1)
+          lambdaJ<- 1
+          epsilonJ<- 0.07
+          XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+1])
+          XnbarJ <- colMeans(XnJ)
+          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
+          zigmaJ<- optconstantJ * zigmaJ
+        } else if (i > 500){
+          currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
+          proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
+
+          if(any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1) || (nstrain > 2 && proposedJcomps[num_Gammas+nstrain+nstrain+1]<0)){
+            MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+            MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:n_factloadings)]
+          }else{
+            JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, proposedJcomps[num_Gammas+nstrain+nstrain+1], Modeltype)
+
+            JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
+            JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
+            if(any(!is.finite(JointTPM1))){
+              MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+              MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+1]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+1]
+            }else{
+              priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+              priorproposedGs<- sum(dbeta(proposedJcomps[1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
+
+              priorcurrentB<- sum(dgamma(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
+              priorproposedB<- sum(dgamma(proposedJcomps[num_Gammas+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
+
+              priorcurrentAks <- sum(dgamma(exp(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]),
+                                            shape=0.01, rate=0.01/exp(-15), log=TRUE) + MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+              priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
+                                             shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
+
+              if(nstrain==2){
+                priorproposedcopPs<- dnorm(proposedJcomps[num_Gammas+nstrain+nstrain+1], mean = 0, sd=100, log = TRUE)
+                priorcurrentcopPs<- dnorm(MC_chain[i, ncol(MC_chain)], mean=0, sd=100, log = TRUE)
+              }else{
+                priorproposedcopPs<- dexp(proposedJcomps[num_Gammas+nstrain+nstrain+1], rate=0.5, log = TRUE)
+                priorcurrentcopPs<- dexp(MC_chain[i, ncol(MC_chain)], rate = 0.5, log = TRUE)
+              }
+
+              proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
+              proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
+
+              Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=proposedJcomps[num_Gammas+(1:nstrain)], Bits=Bits, a_k=proposedJcomps[num_Gammas+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
+              grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
+              likelihoodproposed<- Allquantities$loglike
+
+              mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + priorproposedcopPs + proposalcurrentJcomps
+                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - priorcurrentcopPs - proposalproposedJcomps)
+
+              if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
+                MC_chain[i,1:num_Gammas]<- proposedJcomps[1:num_Gammas]
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[num_Gammas+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[num_Gammas+nstrain+(1:nstrain)]
+                grad_current<- grad_proposed
+                JointTPM<- JointTPM1
+                likelihoodcurrent<- likelihoodproposed
+              }else{
+                MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+1]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+1]
+              }
+              currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
+
+              XnbarPrevJ <- XnbarJ
+              XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
+              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+1))/i
+              #Robbins Munro tuning
+              lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+            }
+          }
+        }
+      }else if(Modeltype == 7){
+        #Adapting zigmaJ
+        if(i==500){
+          optconstantJ<- 2.38^2/(nstrain+nstrain)
+          lambdaJ<- 1
+          epsilonJ<- 0.07
+          XnJ<- cbind(MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+          XnbarJ <- colMeans(XnJ)
+          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, nstrain+nstrain)
+          zigmaJ<- optconstantJ * zigmaJ
+        } else if (i > 500){
+          currentJcomps<- c(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+          proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
+
+          priorcurrentB<- sum(dgamma(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], shape = rep(2, nstrain), rate = rep(2,nstrain), log=TRUE))
+          priorproposedB<- sum(dgamma(proposedJcomps[1:nstrain], shape = rep(2, nstrain), rate = rep(2, nstrain), log=TRUE))
+
+          priorcurrentAks <- sum(dgamma(exp(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]),
+                                            shape=0.01, rate=0.01/exp(-15), log=TRUE) + MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+          priorproposedAks <- sum(dgamma(exp(proposedJcomps[nstrain+(1:nstrain)]),
+                                             shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[nstrain+(1:nstrain)])
+
+          proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
+          proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
+
+          Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM, B=proposedJcomps[1:nstrain], Bits=Bits, a_k=proposedJcomps[nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u, gradients=1,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
+          grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
+          likelihoodproposed<- Allquantities$loglike
+
+          mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + proposalcurrentJcomps
+                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - proposalproposedJcomps)
+
+              if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[1:nstrain]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[nstrain+(1:nstrain)]
+                grad_current<- grad_proposed
+                likelihoodcurrent<- likelihoodproposed
+              }else{
+                MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
+                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
+              }
+              currentJcomps<- c(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
+
+              XnbarPrevJ <- XnbarJ
+              XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
+              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,nstrain+nstrain))/i
+              #Robbins Munro tuning
+              lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
         }
       }
     }
