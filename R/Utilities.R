@@ -250,6 +250,14 @@ QRstz_basis<- function(dimension){
   return(Q[, 2:dimension])
 }
 
+#log Generalized Double Pareto Density
+log_GDP<- function(Psi, Alpha, Beta){
+  res1<- log(Alpha) - log(2 * Beta)
+  res2<- -(Alpha + 1) * log(1 + abs(Psi) / Beta)
+  res<- res1 + res2
+  return(res)
+}
+
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
 #names(popn2010)<- NULL

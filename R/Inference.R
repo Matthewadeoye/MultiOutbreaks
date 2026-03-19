@@ -436,8 +436,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
-          priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
+          priorcurrentLAMBDA<- sum(log_GDP(LAMBDAS_current, 3, 1))
+          priorproposedLAMBDA<- sum(log_GDP(LAMBDAS_prop, 3, 1))
 
           mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA + sum(log(1 - LAMBDAS_prop^2))
                            - likelihoodcurrent - priorcurrentLAMBDA - sum(log(1 - LAMBDAS_current^2)))
@@ -701,8 +701,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
                                              shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
 
-              priorcurrentLAMBDA <- sum(dbeta((LAMBDAS_current + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
-              priorproposedLAMBDA <- sum(dbeta((LAMBDAS_prop + 1)/2, rep(beta_param1,nstrain), rep(beta_param2,nstrain), log=TRUE))
+              priorcurrentLAMBDA<- sum(log_GDP(LAMBDAS_current, 3, 1))
+              priorproposedLAMBDA<- sum(log_GDP(LAMBDAS_prop, 3, 1))
 
               proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
               proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
