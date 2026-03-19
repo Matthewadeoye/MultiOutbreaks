@@ -436,11 +436,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          priorcurrentLAMBDA<- sum(log_GDP(LAMBDAS_current, 3, 1))
-          priorproposedLAMBDA<- sum(log_GDP(LAMBDAS_prop, 3, 1))
+          priorcurrentLAMBDA<- sum(log_GDP(eta, 3, 1))
+          priorproposedLAMBDA<- sum(log_GDP(eta_prop, 3, 1))
 
-          mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA + sum(log(1 - LAMBDAS_prop^2))
-                           - likelihoodcurrent - priorcurrentLAMBDA - sum(log(1 - LAMBDAS_current^2)))
+          mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA
+                           - likelihoodcurrent - priorcurrentLAMBDA)
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
@@ -701,8 +701,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
                                              shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
 
-              priorcurrentLAMBDA<- sum(log_GDP(LAMBDAS_current, 3, 1))
-              priorproposedLAMBDA<- sum(log_GDP(LAMBDAS_prop, 3, 1))
+              priorcurrentLAMBDA<- sum(log_GDP(eta, 3, 1))
+              priorproposedLAMBDA<- sum(log_GDP(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)], 3, 1))
 
               proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
               proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
@@ -711,8 +711,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
               likelihoodproposed<- Allquantities$loglike
 
-              mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks +  priorproposedLAMBDA + proposalcurrentJcomps + sum(log(1 - LAMBDAS_prop^2))
-                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - priorcurrentLAMBDA - proposalproposedJcomps - sum(log(1 - LAMBDAS_current^2)))
+              mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks +  priorproposedLAMBDA + proposalcurrentJcomps
+                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - priorcurrentLAMBDA - proposalproposedJcomps)
 
               if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
                 MC_chain[i,1:num_Gammas]<- proposedJcomps[1:num_Gammas]
