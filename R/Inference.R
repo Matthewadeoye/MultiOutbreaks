@@ -581,9 +581,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       if(Modeltype %in% c(1,2)){
         #Adapting zigmaJ
         if(i==500){
+          acc<- 0
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain)
           lambdaJ<- 1
-          epsilonJ<- 0.07
+          epsilonJ<- 1e-6
           XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain)
@@ -634,6 +635,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             grad_current<- grad_proposed
             JointTPM<- JointTPM1
             likelihoodcurrent<- likelihoodproposed
+            acc<- acc + 1
           }else{
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
@@ -653,9 +655,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       }else if(Modeltype %in% c(3,4)){
         #Adapting zigmaJ
         if(i==500){
+          acc<- 0
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+n_factloadings)
           lambdaJ<- 1
-          epsilonJ<- 0.07
+          epsilonJ<- 1e-6
           eta <- atanh(MC_chain[1:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
           XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
           XnbarJ <- colMeans(XnJ)
@@ -717,6 +720,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 grad_current<- grad_proposed
                 JointTPM<- JointTPM1
                 likelihoodcurrent<- likelihoodproposed
+                acc<- acc + 1
               }else{
                 MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
@@ -739,9 +743,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       }else if(Modeltype %in% c(5,6)){
         #Adapting zigmaJ
         if(i==500){
+          acc<- 0
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+1)
           lambdaJ<- 1
-          epsilonJ<- 0.07
+          epsilonJ<- 1e-6
           XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
           XnbarJ <- colMeans(XnJ)
           zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
@@ -803,6 +808,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 grad_current<- grad_proposed
                 JointTPM<- JointTPM1
                 likelihoodcurrent<- likelihoodproposed
+                acc<- acc + 1
               }else{
                 MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
@@ -823,9 +829,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
       }else if(Modeltype == 7){
         #Adapting zigmaJ
         if(i==500){
+          acc<- 0
           optconstantJ<- 2.38^2/(nstrain+nstrain)
           lambdaJ<- 1
-          epsilonJ<- 0.07
+          epsilonJ<- 1e-6
           XnJ<- cbind(MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ <- cov(XnJ) + epsilonJ * diag(1, nstrain+nstrain)
@@ -857,6 +864,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[nstrain+(1:nstrain)]
                 grad_current<- grad_proposed
                 likelihoodcurrent<- likelihoodproposed
+                acc<- acc + 1
               }else{
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
@@ -874,6 +882,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
     }
     if(i %% 1000 == 0) cat("Iteration:", i, "\n")
   }
+  if(Modeltype %in% (1:7) && num_iteration>600) print(acc/num_iteration)
 
   if(Modeltype %in% c(0, 1)){
     colnames(MC_chain) <- paste(c("G12", "G21", "kappa_r", "kappa_s", "kappa_u", paste("r", 1:time, sep=""), paste("s", 1:12, sep=""), paste("u", 1:ndept, sep=""), paste("B", 1:nstrain, sep=""), paste("a_k", 1:nstrain, sep="")))
