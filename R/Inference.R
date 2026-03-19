@@ -79,13 +79,13 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   if(Modeltype %in% c(0,1,3,5)){
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
-    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    MC_chain[1,]<- c(rep(0.1,num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
     shape1params<- rep(c(1,6), num_Gammas)
     shape2params<- rep(c(11,6),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=num_iteration, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
-    MC_chain[1,]<- c(runif(num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    MC_chain[1,]<- c(rep(0.1,num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
     shape1params<- rep(c(1,6), num_Gammas)
     shape2params<- rep(c(11,6),num_Gammas)
   }else if(Modeltype==7){
@@ -747,21 +747,21 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+1)
           lambdaJ<- 1
           epsilonJ<- 1e-6
-          XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
+          XnJ<- cbind(MC_chain[1:i, 1:num_Gammas], MC_chain[1:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[1:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[1:i, ncol(MC_chain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
           zigmaJ<- optconstantJ * zigmaJ
         } else if (i > 500){
-          currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
+          currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, ncol(MC_chain)])
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
 
-          if(any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1) || (nstrain > 2 && proposedJcomps[num_Gammas+nstrain+nstrain+1]<0)){
+          if(any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1) || (nstrain > 2 && proposedJcomps[length(proposedJcomps)]<0)){
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
-            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]
+            MC_chain[i, ncol(MC_chain)]<- MC_chain[i, ncol(MC_chain)]
           }else{
-            JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, proposedJcomps[num_Gammas+nstrain+nstrain+1], Modeltype)
+            JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, proposedJcomps[length(proposedJcomps)], Modeltype)
 
             JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
             JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
@@ -769,7 +769,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
               MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
               MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
-              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]
+              MC_chain[i, ncol(MC_chain)]<- MC_chain[i, ncol(MC_chain)]
             }else{
               priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
               priorproposedGs<- sum(dbeta(proposedJcomps[1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
@@ -783,10 +783,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                                              shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
 
               if(nstrain==2){
-                priorproposedcopPs<- dnorm(proposedJcomps[num_Gammas+nstrain+nstrain+1], mean = 0, sd=100, log = TRUE)
+                priorproposedcopPs<- dnorm(proposedJcomps[length(proposedJcomps)], mean = 0, sd=100, log = TRUE)
                 priorcurrentcopPs<- dnorm(MC_chain[i, ncol(MC_chain)], mean=0, sd=100, log = TRUE)
               }else{
-                priorproposedcopPs<- dexp(proposedJcomps[num_Gammas+nstrain+nstrain+1], rate=0.5, log = TRUE)
+                priorproposedcopPs<- dexp(proposedJcomps[length(proposedJcomps)], rate=0.5, log = TRUE)
                 priorcurrentcopPs<- dexp(MC_chain[i, ncol(MC_chain)], rate = 0.5, log = TRUE)
               }
 
@@ -804,7 +804,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i,1:num_Gammas]<- proposedJcomps[1:num_Gammas]
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[num_Gammas+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[num_Gammas+nstrain+(1:nstrain)]
-                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]<- proposedJcomps[num_Gammas+nstrain+nstrain+1]
+                MC_chain[i, ncol(MC_chain)]<- proposedJcomps[length(proposedJcomps)]
                 grad_current<- grad_proposed
                 JointTPM<- JointTPM1
                 likelihoodcurrent<- likelihoodproposed
@@ -813,9 +813,9 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
-                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1]
+                MC_chain[i, ncol(MC_chain)]<- MC_chain[i, ncol(MC_chain)]
               }
-              currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+1])
+              currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, ncol(MC_chain)])
 
               XnbarPrevJ <- XnbarJ
               XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
