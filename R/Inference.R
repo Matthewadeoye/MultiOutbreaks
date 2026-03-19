@@ -1,8 +1,8 @@
 #Inference Method 1 -- Smoothing
 SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,"s"=0.3,"u"=0.3),
-                               num_iteration = 15000, sdBs=0.03, sdGs=0.05, sdLambdas=0.03, sdCop=0.002,
+                               num_iteration = 15000, sdBs=0.003, sdGs=0.005, sdLambdas=0.003, sdCop=0.0002,
                                y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE, RM_Cop=TRUE, RM_Lambdas=TRUE,
-                               burn_in=5000, beta_param1=1, beta_param2=1){
+                               burn_in=30000, beta_param1=1, beta_param2=1){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -369,57 +369,57 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         }
 
         #Factor loadings update
-        LAMBDAS<- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+#        LAMBDAS<- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
-        for(l in 1:n_factloadings){
+#        for(l in 1:n_factloadings){
 
-          LAMBDAS_prop <- LAMBDAS
-          eta <- atanh(LAMBDAS[l])
-          eta_prop <- rnorm(1, eta, sdLambdas[l])
-          LAMBDAS_prop[l] <- tanh(eta_prop)
-          LAMBDAS_current <- LAMBDAS[l]
+#          LAMBDAS_prop <- LAMBDAS
+#          eta <- atanh(LAMBDAS[l])
+#          eta_prop <- rnorm(1, eta, sdLambdas[l])
+#          LAMBDAS_prop[l] <- tanh(eta_prop)
+#          LAMBDAS_current <- LAMBDAS[l]
 
-          JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
+#          JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
-          JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
-          JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
+#          JointTPM1<- ifelse(JointTPM1<=0,1e-6,JointTPM1)
+#          JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
-            if(any(!is.finite(JointTPM1))){
-              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
-              if(RM_Lambdas && i<burn_in) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (0 - 0.44))}
-              sdLambdas[l]<- max(sdLambdas[l], 1e-6)
-            }else{
+#            if(any(!is.finite(JointTPM1))){
+#              MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+#              if(RM_Lambdas && i<burn_in) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (0 - 0.44))}
+#              sdLambdas[l]<- max(sdLambdas[l], 1e-6)
+#            }else{
 
-              Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)
+#              Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total=y_total)
 
-              likelihoodproposed<- Allquantities$loglike
+#              likelihoodproposed<- Allquantities$loglike
 
-              priorcurrentLAMBDA <- dbeta((LAMBDAS_current + 1)/2, beta_param1, beta_param2, log=TRUE)
-              priorproposedLAMBDA <- dbeta((LAMBDAS_prop[l] + 1)/2, beta_param1, beta_param2, log=TRUE)
+#              priorcurrentLAMBDA <- dbeta((LAMBDAS_current + 1)/2, beta_param1, beta_param2, log=TRUE)
+#              priorproposedLAMBDA <- dbeta((LAMBDAS_prop[l] + 1)/2, beta_param1, beta_param2, log=TRUE)
 
-              mh.ratioL<- exp(likelihoodproposed + priorproposedLAMBDA + log(1 - LAMBDAS_prop[l]^2)
-                              - likelihoodcurrent - priorcurrentLAMBDA - log(1 - LAMBDAS_current^2))
+#              mh.ratioL<- exp(likelihoodproposed + priorproposedLAMBDA + log(1 - LAMBDAS_prop[l]^2)
+#                              - likelihoodcurrent - priorcurrentLAMBDA - log(1 - LAMBDAS_current^2))
 
-              if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
-                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
-                LAMBDAS[l]<- LAMBDAS_prop[l]
-                likelihoodcurrent<- likelihoodproposed
-                JointTPM<- JointTPM1
-              }
-              else{
-                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
-                LAMBDAS[l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
-              }
-              if(RM_Lambdas && i<burn_in && !is.na(mh.ratioL)) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))}
-            }
-        }
+#              if(!is.na(mh.ratioL) && runif(1) < mh.ratioL){
+#                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- LAMBDAS_prop[l]
+#                LAMBDAS[l]<- LAMBDAS_prop[l]
+#                likelihoodcurrent<- likelihoodproposed
+#                JointTPM<- JointTPM1
+#              }
+#              else{
+#                MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+#                LAMBDAS[l]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+l]
+#              }
+#              if(RM_Lambdas && i<burn_in && !is.na(mh.ratioL)) {sdLambdas[l]= sdLambdas[l] * exp((RMLdelta/i) * (min(mh.ratioL, 1) - 0.44))}
+#            }
+#        }
 
 ##############################################################################################################################################################################
         #FactorLoadings update when posterior is less sensitive to individual update
-        eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+        eta <- atanh(MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
         eta_prop <- rnorm(n_factloadings, eta, sdLambdasJoint)
         LAMBDAS_prop <- tanh(eta_prop)
-        LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+        LAMBDAS_current <- MC_chain[i-1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -427,7 +427,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         JointTPM1<- ifelse(JointTPM1>=1,1-1e-6,JointTPM1)
 
         if(any(!is.finite(JointTPM1))){
-          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+          MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           if(RM_Lambdas && i<burn_in) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (0 - 0.234))}
           sdLambdasJoint<- max(sdLambdasJoint, 1e-6)
         }else{
@@ -448,7 +448,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             JointTPM<- JointTPM1
           }
           else{
-            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+            MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           }
           if(RM_Lambdas && i<burn_in && !is.na(mh.ratioGC)) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
         }
@@ -641,6 +641,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
           }
+          if(i<burn_in){
           currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
 
           XnbarPrevJ <- XnbarJ
@@ -649,6 +650,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           #Robbins Munro tuning
           lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
           zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              }
             }
           }
         }
@@ -727,6 +729,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
               }
+              if(i<burn_in){
               eta <- atanh(MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
               LAMBDAS_current <- MC_chain[i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
               currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
@@ -737,6 +740,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              }
             }
           }
         }
@@ -815,6 +819,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
                 MC_chain[i, ncol(MC_chain)]<- MC_chain[i, ncol(MC_chain)]
               }
+              if(i<burn_in){
               currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, ncol(MC_chain)])
 
               XnbarPrevJ <- XnbarJ
@@ -823,6 +828,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              }
             }
           }
         }
@@ -869,6 +875,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
               }
+              if(i<burn_in){
               currentJcomps<- c(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
 
               XnbarPrevJ <- XnbarJ
@@ -877,6 +884,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-500)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+            }
         }
       }
     }
