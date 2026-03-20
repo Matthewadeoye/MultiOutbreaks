@@ -39,6 +39,7 @@ modelevidenceLP <- function(theta, dataset) {
     jointTPM<- JointTPM
   }else if(dataset$Modeltype %in% c(3,4)){
     copulaParam <- theta[startsWith(names(theta), "F")]
+    log_prior <- log_prior + sum(log_GDP(atanh(copulaParam),3,1))
     JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype, dataset$gh)
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
@@ -64,7 +65,7 @@ modelevidenceLP <- function(theta, dataset) {
   # a_k prior (with Jacobian)
     log_prior <- log_prior + sum(dgamma(exp(a_k), shape=0.01, rate=0.01/exp(-15),log=TRUE) + a_k)
 
-  if(dataset$Modeltype %in% c(1,2,3,4,5,6)){
+  if(dataset$Modeltype %in% 1:6){
     log_prior <- log_prior + sum(dbeta(Gammas,dataset$shape1params,dataset$shape2params,log=TRUE))
   }else if(dataset$Modeltype==7){
     for(n in 1:dataset$nstate){
