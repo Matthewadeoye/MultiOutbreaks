@@ -258,6 +258,14 @@ log_GDP<- function(Psi, Alpha, Beta){
   return(res)
 }
 
+#log Dirichlet Density
+log_Dirichlet<- function(Xvector, Alpha){
+  res1<- sum((Alpha-1)*log(Xvector))
+  res2<- sum(lgamma(Alpha)) - lgamma(sum(Alpha))
+  res<- res1 - res2
+  return(res)
+}
+
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
 #names(popn2010)<- NULL
