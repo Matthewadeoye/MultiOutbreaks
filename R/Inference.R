@@ -137,6 +137,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   current_utrans<- t(Qstz_u) %*% MC_chain[1, num_Gammas+3+time+12+(1:ndept)]
 
   deltaP<- 1
+  log_deltaP<- log(deltaP)
   Ln<- 1
   RMdelta<- 1/(0.234*(1-0.234))  #for Betas, Gammas
   RMLdelta<- 1/(0.44*(1-0.44))   #for factor_loadings
@@ -528,6 +529,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           JointTPM1<- JointTPM
           state_n_Prior<- Dirichlet_Prior[n, ]
+          deltaP<- exp(log_deltaP)
           JointTPM1[n, ]<- gtools::rdirichlet(1, state_n_Prior + deltaP * MC_chain[i-1, (index:(n*nstate))])
 
           proposalproposedGs<-  log_Dirichlet(JointTPM1[n, ], MC_chain[i-1, (index:(n*nstate))])
@@ -547,11 +549,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, (index:(n*nstate))]<- as.numeric(JointTPM1[n, ])
             JointTPM<- JointTPM1
             likelihoodcurrent<- likelihoodproposed
-            deltaP<- max(0, deltaP-3)
+            log_deltaP<- log_deltaP - 3
           }
           else{
             MC_chain[i, (index:(n*nstate))]<- MC_chain[i-1, (index:(n*nstate))]
-            deltaP<- deltaP + 1
+            log_deltaP<- log_deltaP + 1
           }
         }
         JointTPM<- matrix(MC_chain[i, 1:num_Gammas], nrow = nstate, ncol = nstate, byrow = TRUE)
