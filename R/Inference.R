@@ -571,8 +571,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           half_hist<- 0.5*i
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
-          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain)
-          zigmaJ<- optconstantJ * zigmaJ
+          zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain)
+          zigmaJ<- optconstantJ * zigmaJ_shape
         } else if (i > 5){
           currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
@@ -630,10 +630,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           XnbarPrevJ <- XnbarJ
           XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
-          zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain))/i
+          zigmaJ_shape <- ((i-1)*zigmaJ_shape + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain))/i
           #Robbins Munro tuning
           lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
-          zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+          zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
           #symmetry
           zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
           #PD
@@ -655,8 +655,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           eta_matrix <- atanh(MC_chain[half_hist:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta_matrix)
           XnbarJ <- colMeans(XnJ)
-          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+n_factloadings)
-          zigmaJ<- optconstantJ * zigmaJ
+          zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+n_factloadings)
+          zigmaJ<- optconstantJ * zigmaJ_shape
         } else if (i > 5){
           currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
@@ -727,10 +727,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
               XnbarPrevJ <- XnbarJ
               XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
-              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+n_factloadings))/i
+              zigmaJ_shape <- ((i-1)*zigmaJ_shape + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+n_factloadings))/i
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
-              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
               #symmetry
               zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
               #PD
@@ -751,8 +751,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           half_hist<- 0.5*i
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[half_hist:i, ncol(MC_chain)])
           XnbarJ <- colMeans(XnJ)
-          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
-          zigmaJ<- optconstantJ * zigmaJ
+          zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
+          zigmaJ<- optconstantJ * zigmaJ_shape
         } else if (i > 5){
           currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[i, ncol(MC_chain)])
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
@@ -822,10 +822,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
               XnbarPrevJ <- XnbarJ
               XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
-              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+1))/i
+              zigmaJ_shape <- ((i-1)*zigmaJ_shape + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,num_Gammas+nstrain+nstrain+1))/i
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
-              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
               #symmetry
               zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
               #PD
@@ -846,8 +846,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           half_hist<- 0.5*i
           XnJ<- cbind(MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
-          zigmaJ <- cov(XnJ) + epsilonJ * diag(1, nstrain+nstrain)
-          zigmaJ<- optconstantJ * zigmaJ
+          zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, nstrain+nstrain)
+          zigmaJ<- optconstantJ * zigmaJ_shape
         } else if (i > 5){
           currentJcomps<- c(MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
@@ -885,10 +885,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
               XnbarPrevJ <- XnbarJ
               XnbarJ <- (i*XnbarJ + currentJcomps)/(i+1)
-              zigmaJ <- ((i-1)*zigmaJ + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,nstrain+nstrain))/i
+              zigmaJ_shape <- ((i-1)*zigmaJ_shape + tcrossprod(currentJcomps) + i*tcrossprod(XnbarPrevJ) - (i+1)*tcrossprod(XnbarJ) + epsilonJ*diag(1,nstrain+nstrain))/i
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
-              zigmaJ<- lambdaJ* optconstantJ * zigmaJ
+              zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
               #symmetry
               zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
               #PD
