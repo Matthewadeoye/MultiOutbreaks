@@ -61,7 +61,10 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   crudeblock<- floor(time/12)
   crudeblock<- ((crudeblock*12)-11):(crudeblock*12)
 
-  initGs<- gtools::rdirichlet(nstate, rep(1, nstate))
+  initGs<- matrix(NA, nstate, nstate)
+  for(mm in 1:nstate){
+  initGs[mm, ]<- gtools::rdirichlet(1, rep(1/nstate, nstate))
+  }
   initstateD<- stationarydistArma_cpp(initGs)[ncol(initGs)]
 
   Model<- ifelse(Modeltype>0,1,0)
@@ -116,11 +119,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   }else if(Modeltype == 7){
     OutbreakPrior_ExpectationMatrix<- matrix(c(11/12,1/12,6/12,6/12), nrow = 2, byrow = T)
     Dirichlet_Prior<- 12 * JointTransitionMatrix_arma_cpp(OutbreakPrior_ExpectationMatrix, nstrain)
-    JointTPM<- matrix(NA, nstate, nstate)
-    for(mm in 1:nstate){
-    JointTPM[mm,]<- gtools::rdirichlet(1, Dirichlet_Prior[mm,])
-    }
-    MC_chain[1,1:num_Gammas]<- as.numeric(t(JointTPM))
+    JointTPM<- Multipurpose_JointTransitionMatrix(MC_chain[1,1:num_Gammas], nstrain, MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
   }
 
   if(Model == 0) JointTPM<- matrix(0, nstate, nstate)
@@ -568,7 +567,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain)
           lambdaJ<- 1
           epsilonJ<- 1e-6
-          half_hist<- 0.5*i
+          half_hist<- floor(0.5*i)
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain)
@@ -634,12 +633,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           #Robbins Munro tuning
           lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
           zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
-          #symmetry
-          zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
-          #PD
-          eig<- eigen(zigmaJ, symmetric = TRUE)
-          eig$values[eig$values < 1e-8] <- 1e-8
-          zigmaJ <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
               }
             }
           }
@@ -651,7 +644,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+n_factloadings)
           lambdaJ<- 1
           epsilonJ<- 1e-6
-          half_hist<- 0.5*i
+          half_hist<- floor(0.5*i)
           eta_matrix <- atanh(MC_chain[half_hist:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta_matrix)
           XnbarJ <- colMeans(XnJ)
@@ -731,12 +724,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
-              #symmetry
-              zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
-              #PD
-              eig<- eigen(zigmaJ, symmetric = TRUE)
-              eig$values[eig$values < 1e-8] <- 1e-8
-              zigmaJ <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
               }
             }
           }
@@ -748,7 +735,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           optconstantJ<- 2.38^2/(num_Gammas+nstrain+nstrain+1)
           lambdaJ<- 1
           epsilonJ<- 1e-6
-          half_hist<- 0.5*i
+          half_hist<- floor(0.5*i)
           XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], MC_chain[half_hist:i, ncol(MC_chain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+1)
@@ -826,12 +813,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
-              #symmetry
-              zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
-              #PD
-              eig<- eigen(zigmaJ, symmetric = TRUE)
-              eig$values[eig$values < 1e-8]<- 1e-8
-              zigmaJ <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
               }
             }
           }
@@ -843,7 +824,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           optconstantJ<- 2.38^2/(nstrain+nstrain)
           lambdaJ<- 1
           epsilonJ<- 1e-6
-          half_hist<- 0.5*i
+          half_hist<- floor(0.5*i)
           XnJ<- cbind(MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)])
           XnbarJ <- colMeans(XnJ)
           zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, nstrain+nstrain)
@@ -889,12 +870,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               #Robbins Munro tuning
               lambdaJ<- lambdaJ * exp((2/max(1, i-2000)) * (min(mh.ratioJ, 1) - 0.234))
               zigmaJ<- lambdaJ* optconstantJ * zigmaJ_shape
-              #symmetry
-              zigmaJ<- (zigmaJ + t(zigmaJ)) / 2
-              #PD
-              eig<- eigen(zigmaJ, symmetric = TRUE)
-              eig$values[eig$values < 1e-8] <- 1e-8
-              zigmaJ <- eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
             }
         }
       }
