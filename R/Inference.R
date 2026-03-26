@@ -397,7 +397,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         if(!is.na(eta_prop[1]) && eta_prop[1] < 0){
           eta_prop<- -eta_prop
         }
-        LAMBDAS_prop <- tanh(eta_prop)
+        LAMBDAS_prop <- 0.99*tanh(eta_prop)
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -656,7 +656,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           if(!is.na(proposedJcomps[num_Gammas+nstrain+nstrain+1]) && proposedJcomps[num_Gammas+nstrain+nstrain+1] < 0){
             proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]<- -proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
           }
-          LAMBDAS_prop <- tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)])
+          LAMBDAS_prop <- 0.99*tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)])
 
           if(any(!is.finite(proposedJcomps)) || any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1)){
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
