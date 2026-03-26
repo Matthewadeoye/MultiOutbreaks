@@ -112,6 +112,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype %in% c(3,4)){
     eta<- atanh(MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+    eta_matrix<- matrix(NA, nrow=num_iteration, ncol=n_factloadings)
+    eta_matrix[1, ]<- eta
     JointTPM<- Multipurpose_JointTransitionMatrix2(MC_chain[1,1:num_Gammas], nstrain, MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], Modeltype, gh)
     JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
     JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
@@ -143,6 +145,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   sdLambdas<- rep(sdLambdas, nstrain)
   sdLambdasJoint<- sdLambdas
   sdGsJoint<- sdGs
+
+
+  lambda_tilde<- 0.58
+  psi<- 1.23
+  sdPsi<- 0.03
 
   if(Modeltype %in% c(1,2)){
     zigmaJ <- diag(0.0001, num_Gammas+nstrain+nstrain)
@@ -392,12 +399,26 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           }
         }
 
-        #FactorLoadings joint update
-        eta_prop <- rnorm(n_factloadings, eta, sdLambdasJoint)
-        if(!is.na(eta_prop[1]) && eta_prop[1] < 0){
+        eta_prop<- rnorm(n_factloadings, eta, sdLambdasJoint)
+
+        log_psi_prop<- rnorm(1, log(psi), sdPsi)
+        psi_prop<- exp(log_psi_prop)
+
+        LAMBDAS_prop<- (eta_prop * sqrt(psi_prop)) /
+          sqrt(1 + (eta_prop^2) * psi_prop)
+
+        if(!is.na(LAMBDAS_prop[1]) && LAMBDAS_prop[1] < 0){
+          LAMBDAS_prop<- -LAMBDAS_prop
           eta_prop<- -eta_prop
         }
-        LAMBDAS_prop <- 0.99*tanh(eta_prop)
+
+
+        # #FactorLoadings joint update
+        # eta_prop <- rnorm(n_factloadings, eta, sdLambdasJoint)
+        # if(!is.na(eta_prop[1]) && eta_prop[1] < 0){
+        #   eta_prop<- -eta_prop
+        # }
+        # LAMBDAS_prop <- 0.99*tanh(eta_prop)
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -406,7 +427,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
         if(any(!is.finite(JointTPM1))){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
-          eta <- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+          #eta <- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
           if(RM_Lambdas && i<burn_in) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (0 - 0.234))}
           sdLambdasJoint<- max(sdLambdasJoint, 1e-6)
         }else{
@@ -424,12 +445,15 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
             eta<- eta_prop
+            eta_matrix[i, ]<- eta_prop
             likelihoodcurrent<- likelihoodproposed
             JointTPM<- JointTPM1
+            psi<- psi_prop
           }
           else{
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
-            eta<- atanh(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+            #eta<- atanh(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+            eta_matrix[i, ]<- eta
           }
           if(RM_Lambdas && i<burn_in && !is.na(mh.ratioGC)) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
         }
@@ -645,24 +669,39 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           lambdaJ<- 1
           epsilonJ<- 1e-6
           half_hist<- floor(0.5*i)
-          eta_matrix <- atanh(MC_chain[half_hist:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
-          XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta_matrix)
+          #eta_matrix <- atanh(MC_chain[half_hist:i,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+          XnJ<- cbind(MC_chain[half_hist:i, 1:num_Gammas], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[half_hist:i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta_matrix[half_hist:i,])
           XnbarJ <- colMeans(XnJ)
           zigmaJ_shape <- cov(XnJ) + epsilonJ * diag(1, num_Gammas+nstrain+nstrain+n_factloadings)
           zigmaJ<- optconstantJ * zigmaJ_shape
         } else if (i > 5){
           currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
-          if(!is.na(proposedJcomps[num_Gammas+nstrain+nstrain+1]) && proposedJcomps[num_Gammas+nstrain+nstrain+1] < 0){
-            proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]<- -proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
+
+          eta_prop<- proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
+
+          log_psi_prop<- rnorm(1, log(psi), sdPsi)
+          psi_prop<- exp(log_psi_prop)
+
+          LAMBDAS_prop<- (eta_prop * sqrt(psi_prop)) /
+            sqrt(1 + (eta_prop^2) * psi_prop)
+
+          if(!is.na(LAMBDAS_prop[1]) && LAMBDAS_prop[1] < 0){
+            LAMBDAS_prop<- -LAMBDAS_prop
+            eta_prop<- -eta_prop
           }
-          LAMBDAS_prop <- 0.99*tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)])
+
+          # if(!is.na(proposedJcomps[num_Gammas+nstrain+nstrain+1]) && proposedJcomps[num_Gammas+nstrain+nstrain+1] < 0){
+          #   proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]<- -proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
+          # }
+          # LAMBDAS_prop <- 0.99*tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)])
 
           if(any(!is.finite(proposedJcomps)) || any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1)){
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
+            eta_matrix[i,]<- eta
           }else{
             JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedJcomps[1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -673,7 +712,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
               MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
               MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
-              eta <- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+              #eta <- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+              eta_matrix[i, ]<- eta
             }else{
               priorcurrentGs<- sum(dbeta(MC_chain[i,1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
               priorproposedGs<- sum(dbeta(proposedJcomps[1:num_Gammas], shape1 = shape1params, shape2 = shape2params, log=TRUE))
@@ -704,17 +744,21 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[num_Gammas+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- proposedJcomps[num_Gammas+nstrain+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_prop
-                eta<- proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
+                #eta<- proposedJcomps[num_Gammas+nstrain+nstrain+(1:n_factloadings)]
                 grad_current<- grad_proposed
                 JointTPM<- JointTPM1
                 likelihoodcurrent<- likelihoodproposed
                 acc<- acc + 1
+                psi<- psi_prop
+                eta<- eta_prop
+                eta_matrix[i,]<- eta_prop
               }else{
                 MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
                 MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
-                eta<- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+                #eta<- atanh(MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
+                eta_matrix[i,]<- eta
               }
               if(i>2000 && i<burn_in && !is.na(mh.ratioJ)){
               currentJcomps<- c(MC_chain[i, 1:num_Gammas], MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], eta)
