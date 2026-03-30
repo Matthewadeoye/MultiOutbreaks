@@ -382,8 +382,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           proposalcurrentGs<- sum(dbeta(MC_chain[i-1,1:num_Gammas], shape1 = shape1params + Ln * MC_chain[i-1,1:num_Gammas], shape2 = shape2params + Ln * (1-MC_chain[i-1,1:num_Gammas]), log=TRUE))
           proposalproposedGs<- sum(dbeta(proposedGs, shape1 = shape1params + Ln * MC_chain[i-1,1:num_Gammas], shape2 = shape2params + Ln * (1-MC_chain[i-1,1:num_Gammas]), log=TRUE))
 
-          mh.ratioGC<- exp(likelihoodproposed + priorproposedGs
-                           - likelihoodcurrent - priorcurrentGs)
+          mh.ratioGC<- exp(likelihoodproposed + priorproposedGs + proposalcurrentGs
+                           - likelihoodcurrent - priorcurrentGs - proposalproposedGs)
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, 1:num_Gammas]<- proposedGs
