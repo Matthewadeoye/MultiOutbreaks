@@ -449,6 +449,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         #LAMBDAS_propNew<- LAMBDAS_prop
         #if(LAMBDAS_propNew[1]<0) LAMBDAS_propNew= -LAMBDAS_propNew
         LAMBDAS_prop<- c(1, LAMBDAS_prop)
+        LAMBDAS_curr<-  MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i,1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
 
@@ -466,8 +467,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
           likelihoodproposed<- Allquantities$loglike
 
-          priorcurrentLAMBDA<- sum(log_GDP(eta_matrix[i-1,], 3, 1))
-          priorproposedLAMBDA<- sum(log_GDP(eta_prop, 3, 1))
+          # priorcurrentLAMBDA<- sum(log_GDP(eta_matrix[i-1,], 3, 1))
+          # priorproposedLAMBDA<- sum(log_GDP(eta_prop, 3, 1))
+
+          priorcurrentLAMBDA<- sum(dunif(LAMBDAS_curr[-1], min =-1, max = 1, log = TRUE)) + sum(log(1 - LAMBDAS_curr[-1]^2))
+          priorproposedLAMBDA<- sum(dunif(LAMBDAS_prop[-1], min=-1, max=1, log=TRUE)) + sum(log(1 - LAMBDAS_prop[-1]^2))
 
           mh.ratioGC<- exp(likelihoodproposed + priorproposedLAMBDA
                            - likelihoodcurrent - priorcurrentLAMBDA)
@@ -707,6 +711,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           proposedJcomps<- mvnfast::rmvn(1, mu = currentJcomps, sigma = zigmaJ)
           LAMBDAS_prop <- tanh(proposedJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))])
           LAMBDAS_prop<- c(1, LAMBDAS_prop)
+          LAMBDAS_curr<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
 
           if(any(proposedJcomps[1:num_Gammas]<0) || any(proposedJcomps[1:num_Gammas]>1) || any(abs(LAMBDAS_prop)>1)){
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
@@ -737,8 +742,11 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
               priorproposedAks <- sum(dgamma(exp(proposedJcomps[num_Gammas+nstrain+(1:nstrain)]),
                                              shape=0.01, rate=0.01/exp(-15), log=TRUE) +  proposedJcomps[num_Gammas+nstrain+(1:nstrain)])
 
-              priorcurrentLAMBDA<- sum(log_GDP(eta_matrix[i,], 3, 1))
-              priorproposedLAMBDA<- sum(log_GDP(proposedJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], 3, 1))
+              # priorcurrentLAMBDA<- sum(log_GDP(eta_matrix[i,], 3, 1))
+              # priorproposedLAMBDA<- sum(log_GDP(proposedJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], 3, 1))
+
+              priorcurrentLAMBDA<- sum(dunif(LAMBDAS_curr[-1], min=-1, max=1, log = TRUE)) + sum(log(1 - LAMBDAS_curr[-1]^2))
+              priorproposedLAMBDA<- sum(dunif(LAMBDAS_prop[-1], min=-1, max=1, log=TRUE)) + sum(log(1 - LAMBDAS_prop[-1]^2))
 
               proposalproposedJcomps<- mvnfast::dmvn(proposedJcomps, mu = currentJcomps, sigma = zigmaJ, log = TRUE)
               proposalcurrentJcomps<- mvnfast::dmvn(currentJcomps, mu = proposedJcomps, sigma = zigmaJ, log = TRUE)
