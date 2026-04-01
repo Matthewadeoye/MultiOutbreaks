@@ -108,16 +108,14 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
   #Compute gradients
   if(Modeltype %in% c(1,2,5,6)){
     JointTPM<- Multipurpose_JointTransitionMatrix(MC_chain[1,1:num_Gammas], nstrain, MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain], Modeltype)
-    JointTPM <- pmax(pmin(JointTPM, 1 - 1e-6), 1e-6)
-  }else if(Modeltype %in% c(3,4)){
+    }else if(Modeltype %in% c(3,4)){
     MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain+1]<- 1
     eta<- atanh(MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)])
     eta<- eta[-1]
     eta_matrix<- matrix(NA, nrow = num_iteration, ncol = n_factloadings-1)
     eta_matrix[1,]<- eta
     JointTPM<- Multipurpose_JointTransitionMatrix2(MC_chain[1,1:num_Gammas], nstrain, MC_chain[1,num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)], Modeltype, gh)
-    JointTPM <- pmax(pmin(JointTPM, 1 - 1e-6), 1e-6)
-    if(any(!is.finite(JointTPM))) JointTPM<- initGs
+    if(any(!is.finite(JointTPM)) || any(JointTPM<0)) JointTPM<- initGs
   }else if(Modeltype == 7){
     OutbreakPrior_ExpectationMatrix<- matrix(c(11/12,1/12,6/12,6/12), nrow = 2, byrow = T)
     Dirichlet_Prior<- 12 * JointTransitionMatrix_arma_cpp(OutbreakPrior_ExpectationMatrix, nstrain)
@@ -326,7 +324,6 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
         proposedLambdas<- rep(0, nstrain)
         JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, proposedLambdas, Modeltype)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
         Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=1,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
         grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
@@ -360,9 +357,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
 
         currentL<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)]
         JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, currentL, Modeltype, gh)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           if(RM_Gs && i<burn_in) {sdGs= sdGs * exp((RMdelta/i) * (0 - 0.234))}
           sdGs<- max(sdGs, 1e-6)
@@ -395,9 +391,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         LAMBDAS_prop<- c(1, LAMBDAS_prop)
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(MC_chain[i, 1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           if(RM_Lambdas && i<burn_in) {sdLambdasJoint= sdLambdasJoint * exp((RMdelta/i) * (0 - 0.234))}
           sdLambdasJoint<- max(sdLambdasJoint, 1e-6)
@@ -439,9 +434,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         proposedGs<- rbeta(num_Gammas, shape1params + Ln * MC_chain[i,1:num_Gammas], shape2params + Ln * (1-MC_chain[i,1:num_Gammas]))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, LAMBDAS_prop, Modeltype, gh)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
           MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]
           eta_matrix[i,]<- eta_matrix[i,]
           MC_chain[i, 1:num_Gammas]<- MC_chain[i,1:num_Gammas]
@@ -487,9 +481,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         proposedGs<- rbeta(num_Gammas, shape1params + Ln * MC_chain[i-1,1:num_Gammas], shape2params + Ln * (1-MC_chain[i-1,1:num_Gammas]))
 
         JointTPM1<- Multipurpose_JointTransitionMatrix(proposedGs, nstrain, MC_chain[i-1, ncol(MC_chain)], Modeltype)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
           MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           Ln<- Ln + 1
         }else{
@@ -529,9 +522,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         }else{
 
         JointTPM1<- Multipurpose_JointTransitionMatrix(MC_chain[i, 1:num_Gammas], nstrain, proposedcopPs, Modeltype)
-        JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-        if(any(!is.finite(JointTPM1))){
+        if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
           MC_chain[i, ncol(MC_chain)]<- MC_chain[i-1, ncol(MC_chain)]
           if(RM_Cop && i<burn_in) {sdCop= sdCop * exp((RMLdelta/i) * (0 - 0.44))}
           sdCop<- max(sdCop, 1e-6)
@@ -627,9 +619,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
           }else{
           JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_copParams)], Modeltype)
-          JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-          if(any(!is.finite(JointTPM1))){
+          if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
             MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
             MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
@@ -706,9 +697,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             eta_matrix[i,]<- eta_matrix[i,]
           }else{
             JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedJcomps[1:num_Gammas], nstrain, LAMBDAS_prop, Modeltype, gh)
-            JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-            if(any(!is.finite(JointTPM1))){
+            if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
               MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
               MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
               MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
@@ -794,9 +784,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, ncol(MC_chain)]<- MC_chain[i, ncol(MC_chain)]
           }else{
             JointTPM1<- Multipurpose_JointTransitionMatrix(proposedJcomps[1:num_Gammas], nstrain, proposedJcomps[length(proposedJcomps)], Modeltype)
-            JointTPM1 <- pmax(pmin(JointTPM1, 1 - 1e-6), 1e-6)
 
-            if(any(!is.finite(JointTPM1))){
+            if(any(!is.finite(JointTPM1)) || any(JointTPM1<0)){
               MC_chain[i,1:num_Gammas]<- MC_chain[i,1:num_Gammas]
               MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]
               MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]<- MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)]
