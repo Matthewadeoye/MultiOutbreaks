@@ -278,7 +278,7 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_cpp(const arma::mat& gamma
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -344,7 +344,7 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp(List gamma_
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -446,7 +446,7 @@ arma::mat JointTransitionMatrix_Frankcopula_cpp(const arma::mat& gamma,
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -511,7 +511,7 @@ arma::mat JointTransitionMatrix_Frankcopula_perstrain_cpp(List gamma_list,
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -647,7 +647,7 @@ arma::mat JointTransitionMatrix_Gaussiancopula_cpp(const arma::mat& gamma,
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -707,7 +707,7 @@ arma::mat JointTransitionMatrix_Gaussiancopula_perstrain_cpp(List gamma_list,
   for (int i = 0; i < S; i++) {
     double s = arma::accu(GammaMat.row(i));
     GammaMat.row(i) /= s;
-  }
+    }
   return GammaMat;
 }
 
@@ -871,13 +871,13 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
     double loglike_total = 0.0;
 
     arma::mat safeTPM = jointTPM;
-    safeTPM.transform([](double val){ return (val <= 0) ? 1e-12 : val; });
+    safeTPM.transform([](double val){ return (val <= 1e-12) ? 1e-323 : val; });
     arma::mat logjointTPM = arma::log(safeTPM);
     arma::mat logjointTPM_t = logjointTPM.t();
 
     arma::vec init_density = stationarydistArma_cpp(jointTPM);
     arma::vec safeinitdensity = init_density;
-    safeinitdensity.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+    safeinitdensity.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
     arma::vec loginit_density = arma::log(safeinitdensity);
 
     arma::cube E_lambda_itk(ndept, time, nstrain, arma::fill::zeros);
@@ -905,7 +905,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
             arma::vec y_vec = y.tube(i, t);
             arma::vec lambda_vec = lambda_array.tube(t, n);
             arma::vec safelambda_vec = lambda_vec;
-            safelambda_vec.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+            safelambda_vec.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
@@ -939,7 +939,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
             arma::vec y_vec = y.tube(i, t);
             arma::vec lambda_vec = lambda_array.tube(t, n);
             arma::vec safelambda_vec = lambda_vec;
-            safelambda_vec.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+            safelambda_vec.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
@@ -1088,7 +1088,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       arma::mat Y = y.slice(k);
       arma::mat Lambda = allPoisMean.slice(k);
       arma::mat safeLambda = Lambda;
-      safeLambda.transform( [](double val) { return (val <= 0) ? 1e-12 : val; } );
+      safeLambda.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; } );
       arma::mat tempPoisDensity = Y % arma::log(safeLambda) - Lambda - lgamma(Y + 1);
       tempPoisDensity = replace_naMat_with_zero(tempPoisDensity);
       loglike += arma::accu(tempPoisDensity);
@@ -1146,13 +1146,13 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
     double loglike_total = 0.0;
 
     arma::mat safeTPM = jointTPM;
-    safeTPM.transform([](double val){ return (val <= 0) ? 1e-12 : val; });
+    safeTPM.transform([](double val){ return (val <= 1e-12) ? 1e-323 : val; });
     arma::mat logjointTPM = arma::log(safeTPM);
     arma::mat logjointTPM_t = logjointTPM.t();
 
     arma::vec init_density = stationarydistArma_cpp(jointTPM);
     arma::vec safeinitdensity = init_density;
-    safeinitdensity.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+    safeinitdensity.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
     arma::vec loginit_density = arma::log(safeinitdensity);
 
     arma::cube Actual_lambda_itk(ndept, time, nstrain, arma::fill::zeros);
@@ -1180,7 +1180,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec y_vec = y.tube(i, t);
             arma::vec lambda_vec = lambda_array.tube(t, n);
             arma::vec safelambda_vec = lambda_vec;
-            safelambda_vec.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+            safelambda_vec.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
@@ -1213,7 +1213,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
             arma::vec y_vec = y.tube(i, t);
             arma::vec lambda_vec = lambda_array.tube(t, n);
             arma::vec safelambda_vec = lambda_vec;
-            safelambda_vec.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+            safelambda_vec.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
@@ -1328,13 +1328,13 @@ arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma
   arma::cube PosteriorProbabilities_array(ndept, time, nstate, arma::fill::zeros);
 
     arma::mat safeTPM = jointTPM;
-    safeTPM.transform([](double val){ return (val <= 0) ? 1e-12 : val; });
+    safeTPM.transform([](double val){ return (val <= 1e-12) ? 1e-323 : val; });
     arma::mat logjointTPM = arma::log(safeTPM);
     arma::mat logjointTPM_t = logjointTPM.t();
 
     arma::vec init_density = stationarydistArma_cpp(jointTPM);
     arma::vec safeinitdensity = init_density;
-    safeinitdensity.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+    safeinitdensity.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
     arma::vec loginit_density = arma::log(safeinitdensity);
 
       for(int i = 0; i < ndept; ++i){
@@ -1349,7 +1349,7 @@ arma::cube PostOutbreakProbs_cpp(arma::cube y, arma::mat e_it, int nstrain, arma
             arma::vec y_vec = y.tube(i, t);
             arma::vec lambda_vec = lambda_array.tube(t, n);
             arma::vec safelambda_vec = lambda_vec;
-            safelambda_vec.transform( [](double val) { return (val <= 0) ? 1e-12 : val; });
+            safelambda_vec.transform( [](double val) { return (val <= 1e-12) ? 1e-323 : val; });
             arma::vec tempPoisDensity = y_vec % arma::log(safelambda_vec) - lambda_vec - lgamma(y_vec + 1);
             tempPoisDensity = replace_naVec_with_zero(tempPoisDensity);
             logEmissions(t, n) = arma::accu(tempPoisDensity);
