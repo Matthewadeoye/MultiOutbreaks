@@ -84,23 +84,15 @@ simulateMultiModel<- function(Modeltype, time, nstrain, adj.matrix, copulaParam,
   }else if(Modeltype == 3){
     T.prob<- c(T.prob[1,2],T.prob[2,1])
     JointTPM<- Multipurpose_JointTransitionMatrix(T.prob, nstrain, copulaParam, Modeltype)
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype == 4){
     T.prob<- runif(2*nstrain, min = 0.1, max = 0.2)
     JointTPM<- Multipurpose_JointTransitionMatrix(T.prob, nstrain, copulaParam, Modeltype)
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype == 5){
     T.prob<- c(T.prob[1,2],T.prob[2,1])
     JointTPM<- Multipurpose_JointTransitionMatrix(T.prob, nstrain, copulaParam, Modeltype)
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype == 6){
     T.prob<- runif(2*nstrain, min = 0.1, max = 0.2)
     JointTPM<- Multipurpose_JointTransitionMatrix(T.prob, nstrain, copulaParam, Modeltype)
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
   }else if(Modeltype == 7){
     copulaParam<- 0
     JointTPM<- matrix(NA, nrow = Jointstates, ncol = Jointstates)

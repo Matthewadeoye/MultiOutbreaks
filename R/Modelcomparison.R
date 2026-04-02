@@ -10,7 +10,6 @@ modelevidenceLP <- function(theta, dataset) {
   r   <- theta[startsWith(names(theta),"r")]
   s   <- theta[startsWith(names(theta), "s")]
   u   <- theta[startsWith(names(theta), "u")]
-  B   <- theta[startsWith(names(theta), "B")]
   a_k <- theta[startsWith(names(theta), "a")]
 
   OutbreakPrior_ExpectationMatrix<- matrix(c(11/12,1/12,6/12,6/12), nrow = 2, byrow = T)
@@ -27,27 +26,24 @@ modelevidenceLP <- function(theta, dataset) {
     B<- rep(0, dataset$nstrain)
     jointTPM<- matrix(0, dataset$nstate, dataset$nstate)
   }else if(dataset$Modeltype %in% c(1,2,5,6)){
+    B<- theta[startsWith(names(theta), "B")]
     copulaParam <- theta[startsWith(names(theta), "c")]
-    JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
+    jointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
     if(dataset$Modeltype %in% c(5,6) && dataset$nstrain==2){
       log_prior <- log_prior + dnorm(copulaParam, mean = 0, sd=100, log = TRUE)
     }else if(dataset$Modeltype %in% c(5,6) && dataset$nstrain>2){
       log_prior <- log_prior + dexp(copulaParam, rate=0.5, log = TRUE)
     }
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-    jointTPM<- JointTPM
   }else if(dataset$Modeltype %in% c(3,4)){
+    B<- theta[startsWith(names(theta), "B")]
     copulaParam <- theta[startsWith(names(theta), "F")]
     log_prior <- log_prior + sum(log_GDP(atanh(copulaParam),3,1))
-    JointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype, dataset$gh)
-    JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-    JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
-    jointTPM<- JointTPM
+    jointTPM<- Multipurpose_JointTransitionMatrix2(Gammas, dataset$nstrain, c(1,copulaParam), dataset$Modeltype, dataset$gh)
   }else if(dataset$Modeltype ==7){
+    B<- theta[startsWith(names(theta), "B")]
     copulaParam <- theta[startsWith(names(theta), "c")]
-    JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, copulaParam, dataset$Modeltype)
-    jointTPM <- pmax(JointTPM, 1e-8)
+    JointTPM<- Multipurpose_JointTransitionMatrix(Gammas, dataset$nstrain, c(1,copulaParam), dataset$Modeltype)
+    jointTPM <- pmax(JointTPM, 1e-32)
     jointTPM <- jointTPM / rowSums(jointTPM)
     jointTPM <- jointTPM
   }
@@ -155,11 +151,12 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
     gh=gh)
 
   if(Modeltype==0){
-    inf.object<- inf.object[, !(startsWith(colnames(inf.object), "G") |
-                                                 startsWith(colnames(inf.object), "B"))]
-  }else if(Modeltype %in% c(3, 4)){
-    inf.object<- inf.object[, !(startsWith(colnames(inf.object), "c"))]
-  }
+    inf.object <- subset(inf.object, select = -startsWith(colnames(inf.object), "G"))
+    inf.object <- subset(inf.object, select = -B)
+  }else if(Modeltype %in% c(3,4)){
+    inf.object <- subset(inf.object, select = -startsWith(colnames(inf.object), "c"))
+    inf.object <- subset(inf.object, select = -FactorLoading1)
+    }
 
   Model<- ifelse(Modeltype>0,1,0)
   paramNames<- colnames(inf.object)
@@ -185,14 +182,14 @@ if(Modeltype %in% c(1,2,7)){
   lb[startsWith(names(lb), "B")]<- 0
   lb[startsWith(names(lb), "G")]<- 0
   ub[startsWith(names(ub), "G")]<- 1
-  lb[startsWith(names(lb), "F")]<- -1
-  ub[startsWith(names(ub), "F")]<- 1
+  lb[startsWith(names(lb), "F")]<- -0.99999
+  ub[startsWith(names(ub), "F")]<- 0.99999
 }else if(Modeltype %in% c(5,6) && nstrain>2){
   lb[startsWith(names(lb), "B")]<- 0
   lb[startsWith(names(lb), "G")]<- 0
   ub[startsWith(names(ub), "G")]<- 1
   lb[startsWith(names(lb), "c")]<- 0
-}else if(Modeltype %in% c(5,6)){
+}else if(Modeltype %in% c(5,6) && nstrain==2){
   lb[startsWith(names(lb), "B")]<- 0
   lb[startsWith(names(lb), "G")]<- 0
   ub[startsWith(names(ub), "G")]<- 1

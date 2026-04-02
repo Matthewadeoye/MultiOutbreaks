@@ -865,8 +865,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
           likelihoodproposed<- Allquantities$loglike
 
-          mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + proposalcurrentJcomps
-                              - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - proposalproposedJcomps)
+          mh.ratioJ<- exp(likelihoodproposed + priorproposedB + priorproposedAks + proposalcurrentJcomps
+                              - likelihoodcurrent - priorcurrentB - priorcurrentAks - proposalproposedJcomps)
 
               if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
                 MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)]<- proposedJcomps[1:nstrain]
