@@ -307,3 +307,173 @@ log_Dirichlet<- function(Xvector, Alpha){
 #  }
 #}
 #MultitypeData<- round(MultitypeData)
+
+
+# FactorJointTransitionMatrix_copulaR<- function(gamma, K, copulaParams){
+#
+#   S <- 2^K
+#   gamma[1, ] <- gamma[1, ][2:1]
+#
+#   Gamma <- matrix(0, S, S)
+#
+#   for(a in 0:(S-1)) {
+#     for(b in 0:(S-1)) {
+#       Indices <- integer(0)
+#       IndicesComplement <- integer(0)
+#       prob <- numeric(K)
+#
+#       for(k in 1:K){
+#         from_k <- (a %/% 2^(k-1)) %% 2
+#         to_k   <- (b %/% 2^(k-1)) %% 2
+#
+#         if(from_k == 1) Indices <- c(Indices,k)
+#         else IndicesComplement <- c(IndicesComplement,k)
+#
+#         prob[k] <- gamma[from_k+1, to_k+1]
+#       }
+#
+#       subsets <- sets::set_power(sets::as.set(IndicesComplement))
+#       subsets <- lapply(subsets, function(g) unlist(as.vector(g)))
+#
+#       total <- 0
+#       for(Tset in subsets){
+#         sign <- (-1)^length(Tset)
+#         idx <- c(Indices, Tset)
+#         u <- rep(1, K)
+#         if(length(idx)>0) u[idx] <- prob[idx]
+#         total <- total + sign * one_factor_copula_cdf2(u, copulaParams)
+#       }
+#       Gamma[a+1, b+1] <- total
+#     }
+#   }
+#   Gamma <- Gamma / rowSums(Gamma)
+#   Gamma
+# }
+#
+#
+# matrix FactorJointTransitionMatrix_copula(matrix gamma, int K, vector lambda, vector gh_x, vector gh_w,
+#                                           array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices){
+#
+#   int S = intPower(2,K);
+#   matrix[S, S] Gamma;
+#   matrix[2,2] gamma2 = gamma;
+#   gamma2[1,1] = gamma[1,2];
+#   gamma2[1,2] = gamma[1,1];
+#
+#   for (a in 0:(S-1)) {
+#     for (b in 0:(S-1)) {
+#       vector[K] prob;
+#       array[K] int ones;
+#       array[K] int zeros;
+#       int n1 = 0;
+#       int n0 = 0;
+#
+#       for (k in 1:K) {
+#         int from_k = get_bit(a, k);
+#         int to_k   = get_bit(b, k);
+#         if (from_k == 1) {
+#           n1 += 1;
+#           ones[n1] = k;
+#         } else {
+#           n0 += 1;
+#           zeros[n0] = k;
+#         }
+#         prob[k] = gamma2[from_k + 1, to_k + 1];
+#       }
+#       real total = 0;
+#
+#       int offset = 0;
+#
+#       for (s in 1:num_subsets[a+1]) {
+#         int size_s = subset_sizes[a+1, s];
+#         int sign = (size_s % 2 == 0) ? 1 : -1;
+#
+#         vector[K] u = rep_vector(1.0, K);
+#
+#         //Indices
+#         for (i in 1:n1){
+#           u[ones[i]] = prob[ones[i]];
+#         }
+#
+#         //complement elements
+#         for (j in 1:size_s) {
+#           int idx = subset_indices[a+1, offset + j];
+#           if (idx > 0)
+#             u[idx] = prob[idx];
+#         }
+#
+#         offset += size_s;
+#
+#         total += sign * one_factor_copula_cdf(u, lambda, gh_x, gh_w);
+#       }
+#       Gamma[a+1, b+1] = fmax(total, 1e-300);;
+#     }
+#   }
+#   for (i in 1:S) {
+#     real row_sum = sum(Gamma[i]);
+#     Gamma[i] /= row_sum;
+#   }
+#   return Gamma;
+# }
+#
+#
+#
+# K<- 5
+# S<- 2^K
+# subset_indices<- matrix(NA, nrow = S, ncol = 101)
+# subset_sizes<- matrix(NA, nrow=S, ncol = 100)
+# num_subsets<- numeric(S)
+# for(a in 1:S) {
+#
+#   Indices <- integer(0)
+#   IndicesComplement <- integer(0)
+#
+#   for(k in 1:K){
+#     from_k <- ((a-1) %/% 2^(k-1)) %% 2
+#
+#     if(from_k == 1) Indices <- c(Indices,k)
+#     else IndicesComplement <- c(IndicesComplement,k)
+#   }
+#
+#   subsets <- sets::set_power(sets::as.set(IndicesComplement))
+#   subsets <- lapply(subsets, function(g) unlist(as.vector(g)))
+#
+#   num_subsets[a] <- length(subsets)
+#
+#   subset_lengths <- sapply(subsets, length)
+#
+#   flattened <- unlist(lapply(subsets, function(sub) {
+#     if(length(sub) == 0) 0 else sub
+#   }))
+#
+#   subset_indices[a, 1:length(flattened)] <- flattened
+#   subset_sizes[a, 1:length(subset_lengths)] <- subset_lengths
+# }
+# maxLength<- max(num_subsets)
+# subset_sizes<- subset_sizes[,1:maxLength]
+# subset_indices<-subset_indices[,-1]
+# subset_sizes<- ifelse(is.na(subset_sizes),-1,subset_sizes)
+# subset_indices<- ifelse(is.na(subset_indices),-1,subset_indices)
+#
+#
+# subset_indices_list <- lapply(
+#   seq_len(nrow(subset_indices)),
+#   function(i) as.integer(subset_indices[i, ])
+# )
+# subset_sizes_list <- lapply(
+#   seq_len(nrow(subset_sizes)),
+#   function(i) as.integer(subset_sizes[i, ])
+# )
+#
+# FactorJointTransitionMatrix_copula(
+#   G(0.1,0.2),
+#   5,
+#   c(0.9, 0.4, 0.7,0.1,0.2),
+#   gh$nodes,
+#   gh$weights,
+#   num_subsets,
+#   subset_sizes_list,
+#   subset_indices_list
+# )
+#
+# FactorJointTransitionMatrix_copulaR(G(0.1,0.2),5,c(0.9,0.4,0.7,0.1,0.2))
