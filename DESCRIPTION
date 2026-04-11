@@ -3,9 +3,8 @@ Title: Multi-type spatio-temporal modelling for outbreak data
 Version: 0.0.0.9000
 Authors@R: 
     person("Matthew", "Adeoye", , "first.last@example.com", role = c("aut", "cre"))
-Description: Simulation and inference
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: Bayesian copula-based modelling of multitype spatio-temporal outbreak data
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
@@ -14,7 +13,9 @@ BugReports: https://github.com/Matthewadeoye/MultiOutbreaks/issues
 LinkingTo: 
     Rcpp, RcppArmadillo, RcppEigen, mvtnorm
 Imports: 
+    cmdstanr,
     Rcpp,
     RcppArmadillo, 
     RcppEigen,
+    mvnfast,
     mvtnorm

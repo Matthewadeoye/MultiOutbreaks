@@ -20,7 +20,7 @@ functions{
     return(res);
   }
 
-  matrix JointTransitionMatrix_sameTPM(matrix gamma, int K){
+  matrix JointTransitionMatrix_Independent(array[,,] real gamma, int K){
     int S = intPower(2, K);
     matrix[S, S] Gamma;
       for(a in 0:(S - 1)){
@@ -29,13 +29,26 @@ functions{
       for(k in 1:K){
        int from_k = (a %/% intPower(2, (k - 1))) % 2;
        int to_k = (b %/% intPower(2, (k - 1))) % 2;
-        prob = prob * gamma[from_k + 1, to_k + 1];
+        prob = prob * gamma[from_k + 1, to_k + 1, k];
       }
       Gamma[a + 1, b + 1] = prob;
     }
   }
   return(Gamma);
   }
+
+    //Frank copula CDF
+real FrankCDF(real Psi, vector u){
+  int d = num_elements(u);
+  real num = 1.0;
+  for(i in 1:d){
+    num *= (exp(-Psi * u[i]) - 1);
+  }
+  real denom = pow(exp(-Psi) - 1, d - 1);
+  real result = -1.0 / Psi * log1p(num / denom);
+
+  return result;
+}
 
    real one_factor_copula(vector u, vector lambda, vector gh_x, vector gh_w) {
     int K = num_elements(u);
@@ -64,14 +77,16 @@ functions{
     return result / sqrt(pi());
   }
 
-  matrix FactorJointTransitionMatrix_copula(matrix gamma, int K, vector lambda, vector gh_x, vector gh_w,
-                                    array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices){
+  matrix JointTransitionMatrix_Copula(array[,,] real gamma, int K, vector lambda, vector gh_x, vector gh_w,
+                                    array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices, int Modeltype, real frankparam){
 
     int S = intPower(2,K);
     matrix[S, S] Gamma;
-    matrix[2,2] gamma2 = gamma;
-    gamma2[1,1] = gamma[1,2];
-    gamma2[1,2] = gamma[1,1];
+    array[2,2,K] real gamma2 = gamma;
+    for(m in 1:K){
+      gamma2[1,1,m] = gamma[1,2,m];
+      gamma2[1,2,m] = gamma[1,1,m];
+    }
 
     for (a in 0:(S-1)) {
       for (b in 0:(S-1)) {
@@ -91,7 +106,7 @@ functions{
             n0 += 1;
             zeros[n0] = k;
           }
-          prob[k] = gamma2[from_k + 1, to_k + 1];
+          prob[k] = gamma2[from_k + 1, to_k + 1, k];
         }
         real total = 0;
 
@@ -116,8 +131,11 @@ for (s in 1:num_subsets[a+1]) {
   }
 
   TRACKER += size_s;
-
+if(Modeltype == 3 || Modeltype == 4){
   total += sign * one_factor_copula(u, lambda, gh_x, gh_w);
+}else if(Modeltype == 6 || Modeltype == 6){
+  total += sign * FrankCDF(frankparam, u);
+}
 }
         Gamma[a+1, b+1] = fmax(total, 1e-300);;
       }
@@ -198,118 +216,135 @@ for (s in 1:num_subsets[a+1]) {
   return res;
 }
 
-  //Gamma matrix function
-    matrix G(real G12, real G21) {
-    matrix[2, 2] m;
-    m[1, 1] = 1 - G12;
-    m[1, 2] = G12;
-    m[2, 1] = G21;
-    m[2, 2] = 1 - G21;
-    return m;
+  //Transition matrix function
+    array[,,] real MakeTransMatrix(vector transprob, int nstrain) {
+    int n_transprob = num_elements(transprob);
+    array[2,2,nstrain] real res;
+      res[1,1,1] = 1-transprob[1];
+      res[1,2,1] = transprob[1];
+      res[2,1,1] = transprob[2];
+      res[2,2,1] = 1-transprob[2];
+      if(n_transprob == 2){
+          for(i in 2:nstrain){
+            res[1,1,i] = 1-transprob[1];
+            res[1,2,i] = transprob[1];
+            res[2,1,i] = transprob[2];
+            res[2,2,i] = 1-transprob[2];
+          }
+        }else if(n_transprob>2){
+          int index = 1;
+            for(i in 2:nstrain){
+              res[1,1,i] = 1-transprob[i+index];
+              res[1,2,i] = transprob[i+index];
+              res[2,1,i] = transprob[i+index+1];
+              res[2,2,i] = 1-transprob[i+index+1];
+              index += 1;
+        }
+      }
+    return res;
   }
 
   //loglikelihood via forward filtering
-  real Stan_Loglikelihood(array[,,] int y, vector a_k, vector r, vector s, vector u, matrix gamma, matrix e_it, vector B, int Modeltype, matrix Bits,
-                          vector lambda, vector gh_x, vector gh_w, array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices){
+  real Stan_Loglikelihood(array[,,] int y, vector a_k, vector r, vector s, vector u, array[,,] real gamma, matrix e_it, vector B, int Modeltype, matrix Bits,
+                          vector lambda, vector gh_x, vector gh_w, array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices, array[,] int y_total, array[] vector mod7TransitionArray, real frankparam){
   int ndept = dims(y)[1];
   int time = dims(y)[2];
   int nstrain = dims(a_k)[1];
-    //Model0
+  int nstate = intPower(2, nstrain);
+
   if(Modeltype == 0){
     real allLoglikelihood = 0;
   for(i in 1:ndept) {
-    for(t in 1:time) {
-      for(k in 1:nstrain){
-      if(y[i, t, k] == -1){
-        allLoglikelihood += 0;
-      }else{
-      int month_index = (t - 1) % 12 + 1;
-        allLoglikelihood += poisson_lpmf(y[i, t, k] | e_it[i, t] * exp(a_k[k] + r[t] + s[month_index] + u[i]));
-        }
+    for (t in 1:time) {
+    int month_index = (t - 1) % 12 + 1;
+    vector[nstrain] PoisMean = e_it[i, t] * exp(a_k + r[t] + s[month_index] + u[i]);
+    vector[nstrain] safePoisMean = fmax(PoisMean, 1e-12);
+
+    //y slice
+    array[nstrain] int y_obs = y[i, t];
+
+    // mask: 1 if observed, 0 if missing
+    vector[nstrain] mask;
+
+    for(k in 1:nstrain){
+      if(y_obs[k] == -1){
+        mask[k] = 0;
+        y_obs[k] = 0;
+      } else{
+        mask[k] = 1;
       }
     }
+    vector[nstrain] loglike = to_vector(y_obs) .* log(safePoisMean) - safePoisMean;
+    allLoglikelihood += dot_product(mask, loglike);
+
+    if(sum(mask) == 0 && y_total[i, t] != -1){
+      allLoglikelihood += y_total[i, t] * sum(log(safePoisMean)) - sum(safePoisMean);
+    }
   }
+}
       return allLoglikelihood;
-}else if(Modeltype == 1){
-  int nstate = intPower(2, nstrain);
-  matrix[nstate, nstate] jointTPM = JointTransitionMatrix_sameTPM(gamma, nstrain);
-  matrix[time, nstate] Alpha;
-  vector[nstate] init_density = stationarydist(jointTPM);
+ }else{
+   matrix[nstate, nstate] jointTPM;
+   if(Modeltype==1){
+      jointTPM = JointTransitionMatrix_Independent(gamma, nstrain);
+   }else if(Modeltype==2){
+      jointTPM = JointTransitionMatrix_Independent(gamma, nstrain);
+   }else if(Modeltype==3){
+      jointTPM = JointTransitionMatrix_Copula(gamma, nstrain, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, Modeltype, frankparam);
+   }else if(Modeltype==4){
+      jointTPM = JointTransitionMatrix_Copula(gamma, nstrain, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, Modeltype, frankparam);
+   }else if(Modeltype==5){
+      jointTPM = JointTransitionMatrix_Copula(gamma, nstrain, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, Modeltype, frankparam);
+   }else if(Modeltype==6){
+      jointTPM = JointTransitionMatrix_Copula(gamma, nstrain, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, Modeltype, frankparam);
+   }else if(Modeltype==7){
+     for(m in 1:nstate){
+       jointTPM[m] = transpose(mod7TransitionArray[m]);
+     }
+   }
+  vector[nstate] alpha_prev;
+  vector[nstate] alpha_curr;
+  vector[nstate] log_init_density = log(stationarydist(jointTPM));
+  jointTPM = log(jointTPM);
   vector[ndept] log_forwards;
 
-  for (i in 1:ndept){
-    vector[nstate] prodEmission;
-    for(m in 1:nstate){
-      prodEmission[m] = 0;
-    }
-  // Initialization of the first time step for each department
-  for(n in 1:nstate){
-  for(k in 1:nstrain){
-  if(y[i, 1, k] == -1){
-    prodEmission[n] += 0;
-    }else{
-    prodEmission[n] += poisson_lpmf(y[i, 1, k] | e_it[i, 1] * exp(a_k[k] + r[1] + s[1] + u[i] + dot_product(B, Bits[n, ])));
-    }
+  vector[nstate] BdotBits;
+  for (n in 1:nstate) {
+    BdotBits[n] = dot_product(B, Bits[n, ]);
   }
-}
-  Alpha[1] = transpose(log(init_density) + prodEmission);
-
-  // Dynamic programming loop for the remaining time steps
-      for(t in 2:time) {
-        int month_index = (t - 1) % 12 + 1;
-        for(n in 1:nstate){
-        for(k in 1:nstrain){
-        if(y[i, t, k] == -1){
-          prodEmission[n] += 0;
-          }else{
-         prodEmission[n] += poisson_lpmf(y[i, t, k] | e_it[i, t] * exp(a_k[k] + r[t] + s[month_index] + u[i] + dot_product(B, Bits[n, ])));
-         }
-        }
-      }
-        Alpha[t] = transpose(logVecMatMult(transpose(Alpha[t-1, ]), log(jointTPM)) + prodEmission);
-    }
-        log_forwards[i] = log_sum_exp(Alpha[time, ]);
-  }
-      real fullLogLikelihood = sum(log_forwards);
-      return fullLogLikelihood;
-    }else if(Modeltype == 2){
-  int nstate = intPower(2, nstrain);
-
-  matrix[nstate, nstate] jointTPM = FactorJointTransitionMatrix_copula(gamma, nstrain, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices);
-  matrix[time, nstate] Alpha;
-  vector[nstate] init_density = stationarydist(jointTPM);
-  vector[ndept] log_forwards;
 
   for (i in 1:ndept){
-    vector[nstate] prodEmission;
-    for(m in 1:nstate){
-      prodEmission[m] = 0;
-    }
+    vector[nstate] prodEmission = rep_vector(0, nstate);
   for(n in 1:nstate){
   for(k in 1:nstrain){
-  if(y[i, 1, k] == -1){
-    prodEmission[n] += 0;
-    }else{
-    prodEmission[n] += poisson_lpmf(y[i, 1, k] | e_it[i, 1] * exp(a_k[k] + r[1] + s[1] + u[i] + dot_product(B, Bits[n, ])));
+  if(y[i, 1, k] != -1){
+    prodEmission[n] += poisson_lpmf(y[i, 1, k] | e_it[i, 1] * exp(a_k[k] + r[1] + s[1] + u[i] + BdotBits[n]));
     }
   }
+   if(sum(y[i, 1]) == -nstrain && y_total[i, 1] != -1){
+       prodEmission[n] += y_total[i, 1] * sum(log(e_it[i, 1] * exp(a_k + r[1] + s[1] + u[i] + BdotBits[n]))) - sum(e_it[i, 1] * exp(a_k + r[1] + s[1] + u[i] + BdotBits[n])) - lgamma(y_total[i, 1] + 1);
+    }
 }
-  Alpha[1] = transpose(log(init_density) + prodEmission);
+   alpha_curr = log_init_density + prodEmission;
 
       for(t in 2:time) {
+        alpha_prev = alpha_curr;
+        prodEmission = rep_vector(0, nstate);
         int month_index = (t - 1) % 12 + 1;
+        real PoisMean_it = e_it[i, t] * exp(r[t] + s[month_index] + u[i]);
         for(n in 1:nstate){
         for(k in 1:nstrain){
-        if(y[i, t, k] == -1){
-          prodEmission[n] += 0;
-          }else{
-         prodEmission[n] += poisson_lpmf(y[i, t, k] | e_it[i, t] * exp(a_k[k] + r[t] + s[month_index] + u[i] + dot_product(B, Bits[n, ])));
+        if(y[i, t, k] != -1){
+          prodEmission[n] += poisson_lpmf(y[i, t, k] | PoisMean_it * exp(a_k[k] + BdotBits[n]));
          }
         }
+        if(sum(y[i, t]) == -nstrain && y_total[i, t] != -1){
+           prodEmission[n] += y_total[i, t] * sum(log(PoisMean_it .* exp(a_k + BdotBits[n]))) - sum(PoisMean_it .* exp(a_k + BdotBits[n])) - lgamma(y_total[i, t] + 1);
+        }
       }
-        Alpha[t] = transpose(logVecMatMult(transpose(Alpha[t-1, ]), log(jointTPM)) + prodEmission);
+        alpha_curr = logVecMatMult(alpha_prev, jointTPM) + prodEmission;
     }
-        log_forwards[i] = log_sum_exp(Alpha[time, ]);
+        log_forwards[i] = log_sum_exp(alpha_curr);
   }
       real fullLogLikelihood = sum(log_forwards);
       return fullLogLikelihood;
@@ -328,7 +363,7 @@ data {
   array[ndept, time, nstrain] int y;  // data matrix
   matrix[ndept, time] e_it;           // initial Susceptibles
   matrix[ndept, ndept] R;             // Structure matrix (IGMRF1)
-  int<lower=0> Modeltype;        // Model's functional form
+  int<lower=0> Modeltype;             // Model's functional form
   matrix[12, 12] SMat;                //Structure matrix (seasonal_comp)
   matrix[nstate, nstrain] Bits;       //Bits matrix
   vector[30] gh_x;
@@ -337,20 +372,25 @@ data {
   array[n_subsets] int num_subsets;
   array[nstate,n_subsets] int subset_sizes;
   array[nstate, 100] int subset_indices;
+  array[ndept, time] int y_total;
+  matrix[nstate, nstate] DirichletPrior;
+  int mod7nstate;
 }
 
 parameters {
-  real<lower=0, upper=1> G12;            // transition to hyperendemic
-  real<lower=0, upper=1> G21;            // transition to endemic
-  real<lower=0> kappa_u;                 // spatial precision parameter
+  vector<lower=0,upper=1>[2*npar] transitionParams;            // transition to hyperendemic
+  real<lower=0> kappa_u;                // spatial precision parameter
   real<lower=0> kappa_r;                 // trend precision parameter
   real<lower=0> kappa_s;                 // seasonal precision parameter
   vector[ndept-1] u;                     // Spatial components
   vector[time] rraw;                     // Trend components
   vector[11] sraw;                       // cyclic seasonal components
-  vector<lower=0>[npar] B;            // autoregressive parameters
+  vector<lower=0>[npar] B;               // autoregressive parameters
   vector[nstrain] a_k;                   // background intercepts
   vector<lower=-4,upper=4>[nstrain-1] lambda_free;
+  real frankparam;
+  array[mod7nstate] simplex[mod7nstate] mod7TransitionArray;
+//  row_stochastic_matrix[mod7nstate, mod7nstate] mod7TransitionMatrix;
 }
 
 transformed parameters {
@@ -369,26 +409,46 @@ transformed parameters {
   vector[nstrain] phi_k;
   phi_k = exp(a_k[1:nstrain]);
   vector<lower=-0.9999,upper=0.9999>[nstrain] lambda;
-  lambda = append_row(0.99, 0.99*tanh(lambda_free));
+  lambda = append_row(0.9999, 0.99*tanh(lambda_free));
 }
 
 model {
-  target += beta_lpdf(G12 | 2, 2);
-  target += beta_lpdf(G12 | 2, 2);
   target += gamma_lpdf(kappa_u | 1, 0.01);
   target += gamma_lpdf(kappa_r | 1, 0.0001);
   target += gamma_lpdf(kappa_s | 1, 0.001);
   target += gamma_lpdf(phi_k | 0.1, 0.01/exp(-15));
-  if(Modeltype>0){
-  target += gamma_lpdf(B | 2, 2);
-  target += logGDP(lambda_free);
+  if(Modeltype>0 && Modeltype !=7){
+    if(Modeltype == 3){
+        target += beta_lpdf(transitionParams[1] | 1, 11);
+        target += beta_lpdf(transitionParams[2] | 6, 6);
+        target += logGDP(lambda_free);
+    }else if(Modeltype == 4){
+      int index = 0;
+      for(i in 1:nstrain){
+        target += beta_lpdf(transitionParams[i+index] | 1, 11);
+        target += beta_lpdf(transitionParams[i+index+1] | 6, 6);
+        index += 1;
+        }
+        target += logGDP(lambda_free);
+    }
+      target += gamma_lpdf(B | 2, 2);
+      if(nstrain==2){
+      target += normal_lpdf(frankparam | 0, 100);
+      }else{
+        target += exponential_lpdf(frankparam | 0.5);
+      }
+  }
+  if(Modeltype==7){
+    for(n in 1:nstate){
+      target += dirichlet_lpdf(mod7TransitionArray[n]|DirichletPrior[n,]);
+    }
   }
   target += IGMRF1(uconstrained, kappa_u, R, rankdef);
   target += randomwalk2(r, kappa_r);
   target += seasonalComp(s, kappa_s, SMat);
 
   // Likelihood
-  target += Stan_Loglikelihood(y, a_k, r, s, uconstrained, G(G12, G21), e_it, B, Modeltype, Bits, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices);
+  target += Stan_Loglikelihood(y, a_k, r, s, uconstrained, MakeTransMatrix(transitionParams,nstrain), e_it, B, Modeltype, Bits, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, y_total, mod7TransitionArray, frankparam);
 }
 
 generated quantities{

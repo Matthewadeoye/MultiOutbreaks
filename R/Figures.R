@@ -1,6 +1,6 @@
-multitypeFig<- function(y, maxAll, Modeltype = ""){
+multitypeFig<- function(y, Modeltype = ""){
   nstrain<- dim(y)[3]
-  maxY<- maxAll
+  maxY<- max(y)
   plotlists<- list()
 
   for(i in 1:nstrain){

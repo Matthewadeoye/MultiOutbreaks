@@ -350,7 +350,7 @@ log_Dirichlet<- function(Xvector, Alpha){
 #   Gamma
 # }
 #
-#
+
 # matrix FactorJointTransitionMatrix_copula(matrix gamma, int K, vector lambda, vector gh_x, vector gh_w,
 #                                           array[] int num_subsets, array[,] int subset_sizes, array[,] int subset_indices){
 #
@@ -416,46 +416,47 @@ log_Dirichlet<- function(Xvector, Alpha){
 #   return Gamma;
 # }
 #
-#
-#
-# K<- 5
-# S<- 2^K
-# subset_indices<- matrix(NA, nrow = S, ncol = 101)
-# subset_sizes<- matrix(NA, nrow=S, ncol = 100)
-# num_subsets<- numeric(S)
-# for(a in 1:S) {
-#
-#   Indices <- integer(0)
-#   IndicesComplement <- integer(0)
-#
-#   for(k in 1:K){
-#     from_k <- ((a-1) %/% 2^(k-1)) %% 2
-#
-#     if(from_k == 1) Indices <- c(Indices,k)
-#     else IndicesComplement <- c(IndicesComplement,k)
-#   }
-#
-#   subsets <- sets::set_power(sets::as.set(IndicesComplement))
-#   subsets <- lapply(subsets, function(g) unlist(as.vector(g)))
-#
-#   num_subsets[a] <- length(subsets)
-#
-#   subset_lengths <- sapply(subsets, length)
-#
-#   flattened <- unlist(lapply(subsets, function(sub) {
-#     if(length(sub) == 0) 0 else sub
-#   }))
-#
-#   subset_indices[a, 1:length(flattened)] <- flattened
-#   subset_sizes[a, 1:length(subset_lengths)] <- subset_lengths
-# }
-# maxLength<- max(num_subsets)
-# subset_sizes<- subset_sizes[,1:maxLength]
-# subset_indices<-subset_indices[,-1]
-# subset_sizes<- ifelse(is.na(subset_sizes),-1,subset_sizes)
-# subset_indices<- ifelse(is.na(subset_indices),-1,subset_indices)
-#
-#
+
+PrecomputeCopulaInclusionExclusion<- function(K){
+S<- 2^K
+subset_indices<- matrix(NA, nrow = S, ncol = 101)
+subset_sizes<- matrix(NA, nrow=S, ncol = 101)
+num_subsets<- numeric(S)
+for(a in 1:S) {
+
+  Indices <- integer(0)
+  IndicesComplement <- integer(0)
+
+  for(k in 1:K){
+    from_k <- ((a-1) %/% 2^(k-1)) %% 2
+
+    if(from_k == 1) Indices <- c(Indices,k)
+    else IndicesComplement <- c(IndicesComplement,k)
+  }
+
+  subsets <- sets::set_power(sets::as.set(IndicesComplement))
+  subsets <- lapply(subsets, function(g) unlist(as.vector(g)))
+
+  num_subsets[a] <- length(subsets)
+
+  subset_lengths <- sapply(subsets, length)
+
+  flattened <- unlist(lapply(subsets, function(sub) {
+    if(length(sub) == 0) 0 else sub
+  }))
+
+  subset_indices[a, 1:length(flattened)] <- flattened
+  subset_sizes[a, 1:length(subset_lengths)] <- subset_lengths
+}
+maxLength<- max(num_subsets)
+subset_sizes<- subset_sizes[,1:maxLength]
+subset_indices<-subset_indices[,-1]
+subset_sizes<- ifelse(is.na(subset_sizes),-1,subset_sizes)
+subset_indices<- ifelse(is.na(subset_indices),-1,subset_indices)
+ allobjects<- list("n_subsets"=maxLength, "num_subsets"=num_subsets, "subset_sizes"=subset_sizes, "subset_indices"=subset_indices)
+ return(allobjects)
+}
+
 # subset_indices_list <- lapply(
 #   seq_len(nrow(subset_indices)),
 #   function(i) as.integer(subset_indices[i, ])
