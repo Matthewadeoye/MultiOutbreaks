@@ -1,4 +1,33 @@
 #Inference Method 1 -- Smoothing
+#' Title
+#'
+#' @param y
+#' @param e_it
+#' @param Modeltype
+#' @param adjmat
+#' @param step_sizes
+#' @param Stan
+#' @param MCMC_iterations
+#' @param HMC_iterations
+#' @param sdBs
+#' @param sdGs
+#' @param sdLambdas
+#' @param sdCop
+#' @param y_total
+#' @param RM_Gs
+#' @param RM_Bs
+#' @param RM_Cop
+#' @param RM_Lambdas
+#' @param burn_in
+#' @param n_chains
+#' @param GPU
+#' @param adaptdelta
+#' @param verbose
+#'
+#' @return
+#' @export
+#'
+#' @examples
 SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,"s"=0.3,"u"=0.3), Stan=FALSE,
                                MCMC_iterations = 15000, HMC_iterations=5000, sdBs=0.003, sdGs=0.005, sdLambdas=0.003, sdCop=0.0002,
                                y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE, RM_Cop=TRUE, RM_Lambdas=TRUE,

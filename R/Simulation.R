@@ -52,6 +52,24 @@ simulateMarkovChain<- function(nstep, TPM){
   return(states)
 }
 
+#' Title
+#'
+#' @param Modeltype Model specification
+#' @param time Temporal dimension
+#' @param nstrain Number of disease types
+#' @param adj.matrix Adjacency matrix
+#' @param copulaParam Copula parameter(S)
+#' @param e_it Population dataset
+#' @param B Strain-specific outbreak effects
+#' @param T.prob Transition probabilities
+#' @param r Trend component
+#' @param s Seasonal component
+#' @param u spatial component
+#'
+#' @return Multi-type outbreaks data
+#' @export
+#'
+#' @examples mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
 simulateMultiModel<- function(Modeltype, time, nstrain, adj.matrix, copulaParam,
                               e_it=matrix(c(rep(c(rpois(time, 500000), rpois(time, 1000000)), 4), rpois(time, 500000)),
                                           byrow = T, ncol = time),

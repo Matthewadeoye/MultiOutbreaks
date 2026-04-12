@@ -73,6 +73,20 @@ modelevidenceLP <- function(theta, dataset) {
 }
 
 
+#' Title
+#'
+#' @param y
+#' @param e_it
+#' @param adjmat
+#' @param Modeltype
+#' @param inf.object
+#' @param y_total
+#' @param cores
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.object, y_total=NULL, cores=1){
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -151,11 +165,13 @@ ModelEvidenceBridgeSamplingPackage <- function(y, e_it, adjmat, Modeltype, inf.o
     gh=gh)
 
   if(Modeltype==0){
-    inf.object <- subset(inf.object, select = -startsWith(colnames(inf.object), "G"))
-    inf.object <- subset(inf.object, select = -B)
+    inf.object <- inf.object[,
+                             !(startsWith(colnames(inf.object), "G") |
+                                 startsWith(colnames(inf.object), "B"))]
   }else if(Modeltype %in% c(3,4)){
-    inf.object <- subset(inf.object, select = -startsWith(colnames(inf.object), "c"))
-    inf.object <- subset(inf.object, select = -FactorLoading1)
+    inf.object <- inf.object[,
+                             !(startsWith(colnames(inf.object), "c") |
+                                 colnames(inf.object) == "FactorLoading1")]
     }
 
   Model<- ifelse(Modeltype>0,1,0)
@@ -202,6 +218,20 @@ if(Modeltype %in% c(1,2,7)){
 
 
 #Model evidence via Importance sampling method
+#' Title
+#'
+#' @param y
+#' @param e_it
+#' @param adjmat
+#' @param Modeltype
+#' @param inf.object
+#' @param num_samples
+#' @param y_total
+#'
+#' @return
+#' @export
+#'
+#' @examples
 ModelEvidence<- function(y, e_it, adjmat, Modeltype, inf.object, num_samples = 5000, y_total=NULL){
 
   R<- -1 * adjmat

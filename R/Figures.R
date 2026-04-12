@@ -1,3 +1,14 @@
+#' Title
+#'
+#' @param y Multitype data
+#' @param Modeltype Model name (optional)
+#'
+#' @return Plot of the multitype data
+#' @export
+#'
+#' @examples set.seed(0)
+#' mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+#' multitypeFig(y=mod0[["y"]])
 multitypeFig<- function(y, Modeltype = ""){
   nstrain<- dim(y)[3]
   maxY<- max(y)

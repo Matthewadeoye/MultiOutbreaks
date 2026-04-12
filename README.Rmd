@@ -1,0 +1,124 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# MultiOutbreaks
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+MultiOutbreaks is created to implement a Bayesian copula-based modelling of multi-type spatio-temporal infectious disease outbreak data as presented in [(Adeoye et al., 2026)](https://arxiv.org). The package is built with different functionalities including model simulations, Bayesian inference methods, model comparison methods, plotting of results, etc.
+
+# Dependencies
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+MultiOutbreaks features a complementary HMC sampling which depends on Stan through its R interface, cmdstanr. If not already installed, you can do so using
+
+``` r
+install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+library(cmdstanr)
+install_cmdstan()
+```
+
+## Installation
+
+You can install the development version of MultiOutbreaks from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("Matthewadeoye/MultiOutbreaks")
+```
+
+## Simulation, visualization, inference, and outbreak detection.
+
+An example showing how to simulate and plot multi-type space-time data from model-0 described in [(Adeoye et al., 2026)](https://arxiv.org):
+
+```{r simulation}
+library(MultiOutbreaks)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+multitypeFig(y=mod0[["y"]])
+```
+
+```{r figures, echo = FALSE}
+library(MultiOutbreaks)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+multitypeFig(y=mod0[["y"]])
+```
+
+Inference using either Hamiltonian Monte Carlo or a bespoke MCMC algorithm via DetectOutbreaks:
+
+```{r inference}
+#HMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
+#mcmc.plot(HMCfit0)
+#inf.plot(HMCfit0)
+
+#MCMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE)
+#mcmc.plot(MCMCfit0)
+#inf.plot(MCMCfit0)
+```
+
+
+Simulation, inference and outbreak detection as described in [(Adeoye et al., 2026)](https://arxiv.org/):
+
+```{r outbreak-detection}
+library(MultiOutbreaks)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
+#multitypeFig(y=mod1[["y"]])
+#HMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
+#mcmc.plot(HMCfit1)
+#inf.plot(HMCfit1)
+
+#MarginalProbabilitiesHMC<- Posteriormultstrain.Decoding(y=mod1[["y"]],e_it=mod1[["e_it"]],inf.object = HMCfit1,Modeltype = 1,y_total = NULL,thinningL = 10,burn.in = 2000)
+#image(t(MarginalProbabilities[,,1]))
+
+#MCMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+#mcmc.plot(MCMCfit1)
+#inf.plot(MCMCfit1)
+
+#MarginalProbabilitiesMCMC<- Posteriormultstrain.Decoding(y=mod1[["y"]],e_it=mod1[["e_it"]],inf.object = MCMCfit1,Modeltype = 1,y_total = NULL,thinningL = 10,burn.in = 2000)
+#image(t(MarginalProbabilitiesMCMC[,,1]))
+```
+
+
+Compute model evidence (log marginal likelihood) through Bridge or importance sampling for any model fitted by MultiOutbreaks:
+
+```{r model-evidence}
+library(MultiOutbreaks)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
+#HMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
+#ModelEvidenceBridgeSamplingPackage(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = HMCfit1,y_total = NULL)
+#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = HMCfit1,y_total = NULL)
+
+#MCMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+#ModelEvidenceBridgeSamplingPackage(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = MCMCfit1,y_total = NULL)
+#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = MCMCfit1,y_total = NULL)
+```

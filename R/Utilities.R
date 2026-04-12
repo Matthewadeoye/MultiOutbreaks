@@ -55,6 +55,20 @@ Multipurpose_JointTransitionMatrix2<- function(gammas, K, Lambdas, Modeltype, gh
   return(JointTPM)
 }
 
+#' Title
+#'
+#' @param y
+#' @param e_it
+#' @param inf.object
+#' @param Modeltype
+#' @param y_total
+#' @param thinningL
+#' @param burn.in
+#'
+#' @return
+#' @export
+#'
+#' @examples
 Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, y_total=NULL,
                                         thinningL=1000, burn.in=1000){
   ndept<- dim(y)[1]
