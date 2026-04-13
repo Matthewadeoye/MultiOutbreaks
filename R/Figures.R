@@ -191,7 +191,7 @@ multitypeFig2 <- function(array.object, names = NULL){
     spatdata <- array.object[,,i]
 
   ts_spatdata <- as.data.frame(t(spatdata))
-  ts_spatdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
+  ts_spatdata$Time <- seq.Date(from = as.Date("2010-01-01"), to = as.Date("2019-12-01"), by = "month")
   if(is.null(names)){
     colnames(ts_spatdata) <- c(paste("u", 1:(ncol(ts_spatdata) - 1), sep = ""), "Time")
   }else{
@@ -234,7 +234,7 @@ multitypeFig2 <- function(array.object, names = NULL){
   row_2<- cowplot::plot_grid(plotlist = plotlists[4], ncol = 2, labels = c("D"), label_size = 20, rel_widths = c(0.82, 1))
   finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
   print(finalplot)
-  #export ==> 33 x 13
+  #export ==> 36 x 16
 }
 
 mcmc.plot<- function(inf.object, Histograms=FALSE){
@@ -1097,7 +1097,7 @@ RecoverInfUABGcop.plotGauss <- function(inf.object, true_u, true_a_k, true_B, tr
   #             horiz = TRUE, bty = 'n', cex = 1.5)
 }
 
-Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
+Allmodels_RS_fig<- function(all.infobjects, time=120, burn.in=1000){
   rmat<- matrix(NA, nrow = 8, ncol = time)
   smat<- matrix(NA, nrow = 8, ncol = 12)
   for(i in 1:8){
@@ -1117,7 +1117,7 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
   r_names<- c("A", "B", "C", "D", "E", "F", "G", "H")
   ts_rdata <- as.data.frame(t(rmat))
   ts_sdata <- as.data.frame(t(smat))
-  ts_rdata$Time <- seq.Date(from = as.Date("2011-01-01"), to = as.Date("2019-12-01"), by = "month")
+  ts_rdata$Time <- seq.Date(from = as.Date("2010-01-01"), to = as.Date("2019-12-01"), by = "month")
   ts_sdata$Time <- seq.Date(from = as.Date("2019-01-01"), to = as.Date("2019-12-01"), by = "month")
 
   colnames(ts_rdata) <- c(r_names, "Time")
@@ -1150,7 +1150,7 @@ Allmodels_RS_fig<- function(all.infobjects, time=108, burn.in=1000){
                legend.text = element_text(size = 20)))
   plotlists<- list(a, b)
   print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("I", "II"), label_size = 20, rel_widths = c(1.08, 1.15)))
-  #export==> 23 x 9
+  #export==> 26 x 9
 }
 
 
@@ -1283,7 +1283,7 @@ heat_maps<- function(outbreakProb_arraylist, location_names, pdfname=NULL){
       #custom Y-axis
       axis(2, at=seq(1, length(countries), length.out=length(countries)), labels=rev(countries), lwd.ticks = 1, las = 1, lwd=0, cex.axis = 1.40)
       #custom X-axis
-      years<- 2011:2019
+      years<- 2010:2019
       axis(1, at = seq(1, time, by = 12), labels = years, cex.axis = 1.8)
       if(k==1) {legendary::labelFig(LETTERS[i], adj = c(-0.15, 0.05), font=2, cex=2.5)}
     }

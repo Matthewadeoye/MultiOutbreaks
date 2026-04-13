@@ -135,20 +135,12 @@ Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, y_total=
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
     }else if(Modeltype == 3){
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
-      JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-      JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     }else if(Modeltype == 4){
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
-      JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-      JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     }else if(Modeltype == 5){
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
-      JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-      JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     }else if(Modeltype == 6){
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
-      JointTPM<- ifelse(JointTPM<=0,1e-6,JointTPM)
-      JointTPM<- ifelse(JointTPM>=1,1-1e-6,JointTPM)
     }else if(Modeltype == 7){
       JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Modeltype)
     }
@@ -264,11 +256,23 @@ QRstz_basis<- function(dimension){
   return(Q[, 2:dimension])
 }
 
-#log Generalized Double Pareto Density
-log_GDP<- function(Psi, Alpha, Beta){
+#log Generalized Double Pareto Density (truncated at -1 and 1)
+Trunclog_GDP<- function(Psi, Alpha, Beta){
+  if(all(abs(Psi)<1)){
   res1<- log(Alpha) - log(2 * Beta)
   res2<- -(Alpha + 1) * log(1 + abs(Psi) / Beta)
   res<- res1 + res2
+  }else{
+    res<- -Inf
+  }
+  return(res)
+}
+
+#log Generalized Double Pareto Density
+log_GDP<- function(Psi, Alpha, Beta){
+    res1<- log(Alpha) - log(2 * Beta)
+    res2<- -(Alpha + 1) * log(1 + abs(Psi) / Beta)
+    res<- res1 + res2
   return(res)
 }
 
