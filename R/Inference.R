@@ -31,7 +31,7 @@
 SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"=0.3,"s"=0.3,"u"=0.3), Stan=FALSE,
                                MCMC_iterations = 15000, HMC_iterations=5000, sdBs=0.003, sdGs=0.005, sdLambdas=0.003, sdCop=0.0002,
                                y_total=NULL, RM_Gs=TRUE, RM_Bs=TRUE, RM_Cop=TRUE, RM_Lambdas=TRUE,
-                               burn_in=30000, n_chains=4, GPU = FALSE, adaptdelta = 0.90, verbose=TRUE){
+                               burn_in=30000, n_chains=4, GPU = FALSE, adaptdelta = 0.90, verbose=TRUE, initial_values=NULL, use_initals=FALSE){
   start_time <- Sys.time()
   ndept <- nrow(e_it)
   time <- ncol(e_it)
@@ -166,18 +166,21 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
     num_Gammas<- 2
     MC_chain<- matrix(NA, nrow=MCMC_iterations, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(rep(0.1,num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.5, n_copParams))
+    if(use_initals) MC_chain[1,]<- initial_values
     shape1params<- rep(c(1,6), num_Gammas)
     shape2params<- rep(c(11,6),num_Gammas)
   }else if(Modeltype %in% c(2,4,6)){
     num_Gammas<- 2 * nstrain
     MC_chain<- matrix(NA, nrow=MCMC_iterations, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(rep(0.1,num_Gammas), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.5, n_copParams))
+    if(use_initals) MC_chain[1,]<- initial_values
     shape1params<- rep(c(1,6), num_Gammas)
     shape2params<- rep(c(11,6),num_Gammas)
   }else if(Modeltype==7){
     num_Gammas<- nstate * nstate
     MC_chain<- matrix(NA, nrow=MCMC_iterations, ncol=num_Gammas+3+time+12+ndept+nstrain+nstrain+n_factloadings+n_copParams)
     MC_chain[1,]<- c(as.numeric(t(initGs)), 1/var(crudeR), 1/var(crudeS), 1/var(crudeU), crudeR, crudeS[crudeblock-12], crudeU, rep(0, nstrain), rep(mean(crudeResults[[1]]), nstrain), rep(0, n_factloadings), rep(0.1, n_copParams))
+    if(use_initals) MC_chain[1,]<- initial_values
   }
 
   Q_r<- MC_chain[1,num_Gammas + 1] * RW2PrecMat
@@ -425,6 +428,7 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
         }
         if(RM_Gs && i<burn_in && !is.na(mh.ratio)) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratio, 1) - 0.234))}
       }else if(Modeltype %in% c(3,4)){
+        if(Modeltype==3){
         #Transition probabilities update
         proposedGs<- rnorm(num_Gammas,mean=MC_chain[i-1,1:num_Gammas], sd=rep(sdGs, num_Gammas))
 
@@ -456,7 +460,49 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             MC_chain[i, 1:num_Gammas]<- MC_chain[i-1,1:num_Gammas]
           }
           if(RM_Gs && i<burn_in && !is.na(mh.ratioGC)) {sdGs= sdGs * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
+          }
+        }else if(Modeltype==4){
+          #Transition probabilities update
+          currentL<- MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:nstrain)]
+        for(k in 1:nstrain){
+          idx <- c(2*k - 1, 2*k)
+          currentGs <- MC_chain[i-1, 1:num_Gammas]
+          if(k > 1) currentGs <- MC_chain[i, 1:num_Gammas]
+
+          proposedGs<- currentGs
+          proposedGs_k<- rnorm(2, mean=currentGs[idx], sd=rep(sdGsJoint[k], 2))
+          proposedGs[idx]<- proposedGs_k
+
+          JointTPM1<- Multipurpose_JointTransitionMatrix2(proposedGs, nstrain, currentL, Modeltype, gh)
+
+          if(any(!is.finite(JointTPM1))){
+            MC_chain[i, 1:num_Gammas]<- currentGs
+            if(RM_Gs && i<burn_in) {sdGsJoint[k]= sdGsJoint[k] * exp((RMdelta/i) * (0 - 0.234))}
+            sdGsJoint[k]<- max(sdGsJoint[k], 1e-6)
+          }else{
+
+            Allquantities<- SMOOTHINGgradmultstrainLoglikelihood_cpp(y=y, e_it=e_it, nstrain=nstrain,  r=MC_chain[i, num_Gammas+3+(1:time)], s=MC_chain[i, num_Gammas+3+time+(1:12)], u=MC_chain[i, num_Gammas+3+time+12+(1:ndept)], jointTPM=JointTPM1, B=MC_chain[i, num_Gammas+3+time+12+ndept+(1:nstrain)], Bits=Bits, a_k=MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+(1:nstrain)], Model=Model,Q_r=Q_r,Q_s = Q_s,Q_u=Q_u,gradients=0,Qstz_r=Qstz_r, Qstz_s=Qstz_s, Qstz_u=Qstz_u, y_total = y_total)
+
+            likelihoodproposed<- Allquantities$loglike
+
+            priorcurrentGs<- sum(dbeta(currentGs[idx], shape1 = shape1params[idx], shape2 = shape2params[idx], log=TRUE))
+            priorproposedGs<- sum(dbeta(proposedGs_k, shape1 = shape1params[idx], shape2 = shape2params[idx], log=TRUE))
+
+            mh.ratioGC<- exp(likelihoodproposed + priorproposedGs
+                             - likelihoodcurrent - priorcurrentGs)
+
+            if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
+              MC_chain[i, 1:num_Gammas]<- proposedGs
+              likelihoodcurrent<- likelihoodproposed
+              JointTPM<- JointTPM1
+            }
+            else{
+              MC_chain[i, 1:num_Gammas]<- currentGs
+            }
+            if(RM_Gs && i<burn_in && !is.na(mh.ratioGC)) {sdGsJoint[k]= sdGsJoint[k] * exp((RMdelta/i) * (min(mh.ratioGC, 1) - 0.234))}
+          }
         }
+      }
 
         #FactorLoadings update
         LAMBDAS_prop <- rnorm(n_factloadings-1, MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(2:nstrain)], sdLambdasJoint)
