@@ -8,7 +8,7 @@ functions{
 }
 
     int get_bit(int x, int k) {
-     return (x / (intPower(2,k-1))) % 2;
+     return (x %/% (intPower(2,k-1))) % 2;
    }
 
   vector logVecMatMult(vector logV, matrix logM){
@@ -27,8 +27,8 @@ functions{
       for(b in 0:(S - 1)){
       real prob = 1;
       for(k in 1:K){
-       int from_k = (a %/% intPower(2, (k - 1))) % 2;
-       int to_k = (b %/% intPower(2, (k - 1))) % 2;
+       int from_k = get_bit(a, k);
+       int to_k = get_bit(b, k);
         prob = prob * gamma[from_k + 1, to_k + 1, k];
       }
       Gamma[a + 1, b + 1] = prob;
@@ -61,7 +61,6 @@ real FrankCDF(real Psi, vector u){
       q[k] = inv_Phi(uk);
     }
 
-    // Gauss–Hermite quadrature
     for (j in 1:M) {
       real z = sqrt(2.0) * gh_x[j];
       real prod_term = 1.0;
@@ -217,21 +216,20 @@ if(Modeltype == 3 || Modeltype == 4){
 }
 
   //Transition matrix function
-    array[,,] real MakeTransMatrix(vector transprob, int nstrain) {
-    int n_transprob = num_elements(transprob);
+    array[,,] real MakeTransMatrix(vector transprob, int nstrain, int Modeltype) {
     array[2,2,nstrain] real res;
       res[1,1,1] = 1-transprob[1];
       res[1,2,1] = transprob[1];
       res[2,1,1] = transprob[2];
       res[2,2,1] = 1-transprob[2];
-      if(n_transprob == 2){
+      if(Modeltype == 1 || Modeltype == 3 || Modeltype == 5){
           for(i in 2:nstrain){
             res[1,1,i] = 1-transprob[1];
             res[1,2,i] = transprob[1];
             res[2,1,i] = transprob[2];
             res[2,2,i] = 1-transprob[2];
           }
-        }else if(n_transprob>2){
+        }else if(Modeltype == 2 || Modeltype == 4 || Modeltype == 6){
           int index = 1;
             for(i in 2:nstrain){
               res[1,1,i] = 1-transprob[i+index];
@@ -387,7 +385,7 @@ parameters {
   vector[11] sraw;                       // cyclic seasonal components
   vector<lower=0>[npar] B;               // autoregressive parameters
   vector[nstrain] a_k;                   // background intercepts
-  vector<lower=-4,upper=4>[nstrain-1] lambda_free;
+  vector<lower=-0.9999,upper=0.9999>[nstrain-1] lambda_free;
   real frankparam;
   array[mod7nstate] simplex[mod7nstate] mod7TransitionArray;
 //  row_stochastic_matrix[mod7nstate, mod7nstate] mod7TransitionMatrix;
@@ -409,7 +407,7 @@ transformed parameters {
   vector[nstrain] phi_k;
   phi_k = exp(a_k[1:nstrain]);
   vector<lower=-0.9999,upper=0.9999>[nstrain] lambda;
-  lambda = append_row(0.9999, 0.99*tanh(lambda_free));
+  lambda = append_row(0.9999, lambda_free);
 }
 
 model {
@@ -448,7 +446,7 @@ model {
   target += seasonalComp(s, kappa_s, SMat);
 
   // Likelihood
-  target += Stan_Loglikelihood(y, a_k, r, s, uconstrained, MakeTransMatrix(transitionParams,nstrain), e_it, B, Modeltype, Bits, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, y_total, mod7TransitionArray, frankparam);
+  target += Stan_Loglikelihood(y, a_k, r, s, uconstrained, MakeTransMatrix(transitionParams,nstrain,Modeltype), e_it, B, Modeltype, Bits, lambda, gh_x, gh_w, num_subsets, subset_sizes, subset_indices, y_total, mod7TransitionArray, frankparam);
 }
 
 generated quantities{
