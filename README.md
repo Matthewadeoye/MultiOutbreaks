@@ -68,7 +68,7 @@ multitypeFig(y=mod0[["y"]])
 <img src="man/figures/README-figures-2.png" width="100%" />
 
 Inference using either Hamiltonian Monte Carlo or a bespoke MCMC
-algorithm via DetectOutbreaks:
+algorithm via MultiOutbreaks:
 
 ``` r
 #HMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
@@ -80,8 +80,8 @@ algorithm via DetectOutbreaks:
 #inf.plot(MCMCfit0)
 ```
 
-Simulation, inference and outbreak detection as described in [(Adeoye et
-al., 2026)](https://arxiv.org/):
+Simulation, inference and multi outbreak detection as described in
+[(Adeoye et al., 2026)](https://arxiv.org/):
 
 ``` r
 library(MultiOutbreaks)
@@ -118,9 +118,9 @@ gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
 set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
 #HMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
 #ModelEvidenceBridgeSamplingPackage(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = HMCfit1,y_total = NULL)
-#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = HMCfit1,y_total = NULL)
+#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = HMCfit1, num_samples = 5000, y_total = NULL)
 
 #MCMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
 #ModelEvidenceBridgeSamplingPackage(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = MCMCfit1,y_total = NULL)
-#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = MCMCfit1,y_total = NULL)
+#ModelEvidence(y=mod1[["y"]],e_it = mod1[["e_it"]],adjmat = sim_adjmat,Modeltype =1 ,inf.object = MCMCfit1, num_samples = 5000,y_total = NULL)
 ```

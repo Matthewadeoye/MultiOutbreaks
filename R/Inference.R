@@ -525,8 +525,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
           # priorcurrentLAMBDA<- sum(Trunclog_GDP(MC_chain[i-1, num_Gammas+3+time+12+ndept+nstrain+nstrain+(2:nstrain)], 3, 1))
           # priorproposedLAMBDA<- sum(Trunclog_GDP(LAMBDAS_prop, 3, 1))
 
-          mh.ratioGC<- exp(likelihoodproposed + sum(log(2) + dnorm(LAMBDAS_proptrans, log=TRUE))#+ priorproposedLAMBDA
-                           - likelihoodcurrent - sum(log(2) + dnorm(current_LAMBDAStrans, log=TRUE))) #- priorcurrentLAMBDA)
+          mh.ratioGC<- exp(likelihoodproposed + sum(log(2) + dnorm(LAMBDAS_proptrans, log=TRUE))
+                           - likelihoodcurrent - sum(log(2) + dnorm(current_LAMBDAStrans, log=TRUE)))
 
           if(!is.na(mh.ratioGC) && runif(1) < mh.ratioGC){
             MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(1:n_factloadings)]<- LAMBDAS_propNew
@@ -776,11 +776,8 @@ SMOOTHING_INFERENCE<- function(y, e_it, Modeltype, adjmat, step_sizes = list("r"
             grad_proposed <- list(grad_r=as.numeric(Allquantities$grad_r), grad_s=as.numeric(Allquantities$grad_s), grad_u=as.numeric(Allquantities$grad_u), cov_r=Allquantities$cov_r, cov_s=Allquantities$cov_s, cov_u=Allquantities$cov_u)
             likelihoodproposed<- Allquantities$loglike
 
-            #+  priorproposedLAMBDA
-            #-  priorcurrentLAMBDA
-
-            mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + proposalcurrentJcomps + sum(log(proposedGs * (1 - proposedGs))) + sum(1-LAMBDAS_prop[-1]^2) + sum(log(2) + dnorm(proposedJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], log=TRUE))
-                            - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - proposalproposedJcomps - sum(log(MC_chain[i,1:num_Gammas] * (1 - MC_chain[i,1:num_Gammas]))) - sum(1-MC_chain[i, num_Gammas+3+time+12+ndept+nstrain+nstrain+(2:n_factloadings)]^2) - sum(log(2) + dnorm(currentJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], log=TRUE)))
+            mh.ratioJ<- exp(likelihoodproposed + priorproposedGs + priorproposedB + priorproposedAks + proposalcurrentJcomps + sum(log(proposedGs * (1 - proposedGs))) + sum(log(2) + dnorm(proposedJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], log=TRUE))
+                            - likelihoodcurrent - priorcurrentGs - priorcurrentB - priorcurrentAks - proposalproposedJcomps - sum(log(MC_chain[i,1:num_Gammas] * (1 - MC_chain[i,1:num_Gammas]))) - sum(log(2) + dnorm(currentJcomps[num_Gammas+nstrain+nstrain+(1:(n_factloadings-1))], log=TRUE)))
 
             if(!is.na(mh.ratioJ) && runif(1) < mh.ratioJ){
               MC_chain[i,1:num_Gammas]<- proposedGs

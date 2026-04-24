@@ -284,6 +284,15 @@ log_Dirichlet<- function(Xvector, Alpha){
   return(res)
 }
 
+PosteriorModelProbabilities<- function(ModelEvidenceEstimates){
+  n_models<- length(ModelEvidenceEstimates)
+  PosteriormodelProb<- numeric(n_models)
+  for(i in 1:n_models){
+    PosteriormodelProb[i]<- exp(ModelEvidenceEstimates[i]- matrixStats::logSumExp(c(ModelEvidenceEstimates)))
+  }
+  return(PosteriormodelProb)
+}
+
 #Datasets for application (Meningococcal)
 #popn2010<- read.csv("C:/Users/Matthew Adeoye/Downloads/popn.csv")
 #names(popn2010)<- NULL

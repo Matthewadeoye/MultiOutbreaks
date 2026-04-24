@@ -229,10 +229,6 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_cpp(const arma::mat& gamma
   int S = intPower(2, K);
   arma::mat GammaMat(S, S, arma::fill::zeros);
 
-  arma::mat gamma2 = gamma;
-  gamma2(0,0) = gamma(0, 1);
-  gamma2(0,1) = gamma(0, 0);
-
   // parallelize
 #pragma omp parallel for schedule(dynamic)
   for (int a = 0; a < S; a++) {
@@ -246,12 +242,12 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_cpp(const arma::mat& gamma
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -283,6 +279,7 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_cpp(const arma::mat& gamma
   return GammaMat;
 }
 
+
 // [[Rcpp::export]]
 arma::mat JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp(List gamma_list,
                                                                       int K,
@@ -307,18 +304,16 @@ arma::mat JointTransitionMatrix_1FactorGaussiancopula_per_strain_cpp(List gamma_
 
       for (int k = 0; k < K; k++) {
         arma::mat gamma = gamma_cpp[k];
-        arma::mat gamma2 = gamma;
-        gamma2(0,0) = gamma(0, 1);
-        gamma2(0,1) = gamma(0, 0);
+
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -399,10 +394,6 @@ arma::mat JointTransitionMatrix_Frankcopula_cpp(const arma::mat& gamma,
   int S = intPower(2, K);
   arma::mat GammaMat(S, S, arma::fill::zeros);
 
-  arma::mat gamma2 = gamma;
-  gamma2(0,0) = gamma(0, 1);
-  gamma2(0,1) = gamma(0, 0);
-
   // parallelize
 #pragma omp parallel for schedule(dynamic)
   for (int a = 0; a < S; a++) {
@@ -416,12 +407,12 @@ arma::mat JointTransitionMatrix_Frankcopula_cpp(const arma::mat& gamma,
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -476,18 +467,16 @@ arma::mat JointTransitionMatrix_Frankcopula_perstrain_cpp(List gamma_list,
 
       for (int k = 0; k < K; k++) {
         arma::mat gamma = gamma_cpp[k];
-        arma::mat gamma2 = gamma;
-        gamma2(0,0) = gamma(0, 1);
-        gamma2(0,1) = gamma(0, 0);
+
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -605,10 +594,6 @@ arma::mat JointTransitionMatrix_Gaussiancopula_cpp(const arma::mat& gamma,
   int S = intPower(2, K);
   arma::mat GammaMat(S, S, arma::fill::zeros);
 
-  arma::mat gamma2 = gamma;
-  gamma2(0,0) = gamma(0, 1);
-  gamma2(0,1) = gamma(0, 0);
-
   for (int a = 0; a < S; a++) {
     for (int b = 0; b < S; b++) {
 
@@ -620,12 +605,12 @@ arma::mat JointTransitionMatrix_Gaussiancopula_cpp(const arma::mat& gamma,
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -664,8 +649,6 @@ arma::mat JointTransitionMatrix_Gaussiancopula_perstrain_cpp(List gamma_list,
   int S = intPower(2, K);
   arma::mat GammaMat(S, S, arma::fill::zeros);
 
-
-
   for (int a = 0; a < S; a++) {
     for (int b = 0; b < S; b++) {
 
@@ -675,18 +658,16 @@ arma::mat JointTransitionMatrix_Gaussiancopula_perstrain_cpp(List gamma_list,
 
       for (int k = 0; k < K; k++) {
         arma::mat gamma = gamma_list[k];
-        arma::mat gamma2 = gamma;
-        gamma2(0,0) = gamma(0, 1);
-        gamma2(0,1) = gamma(0, 0);
+
         int from_k = (a >> k) & 1;
         int to_k   = (b >> k) & 1;
 
-        if (from_k == 1)
+        if (to_k == 1)
           Ones.push_back(k);
         else
           Zeros.push_back(k);
 
-        prob(k) = gamma2(from_k, to_k);
+        prob(k) = gamma(from_k, 1);
       }
 
       // power set of zeros
@@ -849,7 +830,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
     }
     grad_s -= Q_s * s;
     grad_s = Qstz_s.t() * grad_s;
-    arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+    arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s + arma::eye(12, 12) * 1e-8);
     cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
@@ -1026,7 +1007,7 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       }
       grad_s -= Q_s * s;
       grad_s = Qstz_s.t() * grad_s;
-      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8);
       cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
@@ -1125,7 +1106,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
     }
     grad_s -= Q_s * s;
     grad_s = Qstz_s.t() * grad_s;
-    arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+    arma::mat cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8);
     cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
 
@@ -1300,7 +1281,7 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       }
       grad_s -= Q_s * s;
       grad_s = Qstz_s.t() * grad_s;
-      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s);
+      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8);
       cov_s = Qstz_s.t() * cov_s * Qstz_s;
 
       // Spatial u gradients
