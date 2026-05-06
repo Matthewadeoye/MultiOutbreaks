@@ -1,13 +1,17 @@
-#' Title
+#' Plot a 3D array of multi-type disease counts (dim=c(locations, time, types)).
 #'
-#' @param y Multitype data
+#' @param y A 3D array of multi-type disease counts (dim=c(locations, time, types)).
 #' @param Modeltype Model name (optional)
 #'
 #' @return Plot of the multitype data
 #' @export
 #'
 #' @examples set.seed(0)
-#' mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+#' sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+#' uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+#' gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+#' gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+#' set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
 #' multitypeFig(y=mod0[["y"]])
 multitypeFig<- function(y, Modeltype = ""){
   nstrain<- dim(y)[3]
@@ -237,6 +241,22 @@ multitypeFig2 <- function(array.object, names = NULL){
   #export ==> 36 x 16
 }
 
+#' A function for plotting MCMC chains.
+#'
+#' @param inf.object Resulting fit object from "SMOOTHING_INFERENCE".
+#' @param Histograms A logical argument asking whether to plot histograms of posterior samples
+#'
+#' @return Figures
+#' @export
+#'
+#' @examples
+#' sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+#' uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+#' gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+#' gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+#' set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+#' MCMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE)
+#' mcmc.plot(MCMCfit0)
 mcmc.plot<- function(inf.object, Histograms=FALSE){
   if(Histograms){
      par(mfrow=c(3, 3))
@@ -251,6 +271,21 @@ mcmc.plot<- function(inf.object, Histograms=FALSE){
     }
 }
 
+#' A function for plotting inferred temporal components (trend and seasonality) with 95% credible intervals.
+#'
+#' @param inf.object Resulting fit object from "SMOOTHING_INFERENCE".
+#'
+#' @return Figures
+#' @export
+#'
+#' @examples
+#' sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+#' uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+#' gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+#' gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+#' set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+#' MCMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE)
+#' inf.plot(MCMCfit0)
 inf.plot<- function(inf.object){
 
     rPosterior<- inf.object[, startsWith(colnames(inf.object), "r")]
@@ -472,6 +507,54 @@ AllViolinplots<- function(plotlists){
   #36 x 26 Export
 }
 
+
+AllViolinplots2<- function(plotlists, filename = "newViolinplots.pdf"){
+  library(ggplot2)
+  library(cowplot)
+
+  plotlists <- lapply(plotlists, function(row) {
+    lapply(row, function(p) {
+      p + theme_bw(base_size = 26) +
+      theme(legend.position = "none")
+    })
+  })
+
+  make_row<- function(i, label, widths){
+    cowplot::plot_grid(
+      plotlist = plotlists[[i]],
+      ncol = 5,
+      labels = c(label, "", "", "", ""),
+      label_size = 30,
+      label_fontface = "bold",
+      rel_widths = widths
+    )
+  }
+
+  row_1 <- make_row(1, "A", c(1.16, 1.16, 1.16, 1.60, 1))
+  row_2 <- make_row(2, "B", c(1.16, 1.16, 1.16, 1.60, 1))
+  row_3 <- make_row(3, "C", c(1.16, 1.16, 1.16, 1.60, 1))
+  row_4 <- make_row(4, "D", c(1.16, 1.16, 1.16, 1.60, 1))
+  row_5 <- make_row(5, "E", c(1.16, 1.16, 1.16, 1.60, 1))
+  row_6 <- make_row(6, "F", c(1.16, 1.16, 1.16, 1.30, 1.30))
+  row_7 <- make_row(7, "G", c(1.16, 1.16, 1.16, 1.30, 1.30))
+  row_8 <- make_row(8, "H", c(1.16, 1.16, 1.16, 1.60, 1))
+
+  final_plot <- cowplot::plot_grid(
+    row_1, row_2, row_3, row_4,
+    row_5, row_6, row_7, row_8,
+    nrow = 8
+  )
+
+  print(final_plot)
+
+  add_legend(0.75, 1.40, legend = "Truth",
+             pch = 19, col = "black",
+             horiz = TRUE, bty = 'n', cex = 5)
+
+  # ggsave(filename, plot = final_plot,
+  #        width = 36, height = 26, units = "in",
+  #        device = "pdf")
+}
 
 RecoverInfUAB.plot <- function(inf.object, true_u, true_a_k, true_B,
                                Modeltype = "", burn.in = 100) {
@@ -1149,7 +1232,7 @@ Allmodels_RS_fig<- function(all.infobjects, time=120, burn.in=1000){
                legend.title = element_text(size = 22),
                legend.text = element_text(size = 20)))
   plotlists<- list(a, b)
-  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("I", "II"), label_size = 20, rel_widths = c(1.08, 1.15)))
+  print(cowplot::plot_grid(plotlist = plotlists, ncol = 2, labels = c("I", "II"), label_size = 21, rel_widths = c(1.08, 1.15)))
   #export==> 26 x 9
 }
 
@@ -1251,8 +1334,8 @@ relativemedian_maps<- function(all.infobjects, burn.in=1000){
     }
     plotlists[[Model]]<- rfig
   }
-  row_1<- cowplot::plot_grid(plotlist = plotlists[1:4], ncol = 4, labels = c("A", "B", "C", "D"), label_size = 17)
-  row_2<- cowplot::plot_grid(plotlist = plotlists[5:8], ncol = 4, labels = c("E", "F", "G", "H"), label_size = 17, rel_widths = c(1.16, 1.16, 1.16, 1.60))
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:4], ncol = 4, labels = c("A", "B", "C", "D"), label_size = 21)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[5:8], ncol = 4, labels = c("E", "F", "G", "H"), label_size = 21, rel_widths = c(1.16, 1.16, 1.16, 1.60))
   print(cowplot::plot_grid(row_1, row_2, nrow = 2))
   #export ==> 23 x 9
 }
@@ -1276,7 +1359,7 @@ heat_maps<- function(outbreakProb_arraylist, location_names, pdfname=NULL){
       mean_Xit<- mean_Xit[ndept:1, ]
       par(mar = c(4, 7.5, 4, 1))
       if(i==1){
-        image(x=1:time, y=1:ndept, t(mean_Xit), main = strain_names[k], axes=F, ylab = "", xlab = "Time [month/year]", cex.lab=1.8, zlim=c(0,1), cex.main=2.5)
+        image(x=1:time, y=1:ndept, t(mean_Xit), main = strain_names[k], axes=F, ylab = "", xlab = "Time [month/year]", cex.lab=1.8, zlim=c(0,1), cex.main=3.0)
       }else{
        image(x=1:time, y=1:ndept, t(mean_Xit), main = "", axes=F, ylab = "", xlab = "Time [month/year]", cex.lab=1.8, zlim=c(0,1))
       }
@@ -1285,7 +1368,7 @@ heat_maps<- function(outbreakProb_arraylist, location_names, pdfname=NULL){
       #custom X-axis
       years<- 2010:2019
       axis(1, at = seq(1, time, by = 12), labels = years, cex.axis = 1.8)
-      if(k==1) {legendary::labelFig(LETTERS[i], adj = c(-0.15, 0.05), font=2, cex=2.5)}
+      if(k==1) {legendary::labelFig(LETTERS[i], adj = c(-0.15, 0.05), font=2, cex=3.0)}
     }
   }
 
@@ -1379,6 +1462,167 @@ simulation_heat_maps<- function(Truth_arraylist, matrix_arraylist, Outbreaktype=
 #             col="black",
 #             horiz=TRUE, bty='n', cex=5.0)
 
+  dev.off()
+}
+
+Posteriorpredictive<- function(all.infobjects,  realdata, burn.in, y_total){
+  time<- ncol(realdata[[1]][,,1])
+  ndept<- nrow(realdata[[1]][,,1])
+  nstrain<- dim(realdata[[1]])[3]
+  nstate<- 2^nstrain
+  Bits<- encodeBits(nstrain)
+  gh <- statmod::gauss.quad(30, kind = "hermite")
+  maxcolsumY<- numeric(nstrain)
+  mincolsumY<- numeric(nstrain)
+  for(k in 1:nstrain){
+    maxcolsumY[k]<- max(colSums(realdata[[1]][,,k]))
+    mincolsumY[k]<- min(colSums(realdata[[1]][,,k]))
+  }
+
+  pdf("PosteriorpredictiveOutbreak.pdf", paper="special", width=24,height=30, pointsize=12)
+  par(mfrow=c(8,4), mar = c(4.5, 6, 8.0, 3.5))
+  #c(bottom, left, top, right) ==> specification order
+
+  for(ggg in 1:8){
+    inf.object<- all.infobjects[[ggg]]
+    Model<- ggg-1
+
+    y<- realdata[[1]]
+    e_it<- realdata[[2]]
+
+      rPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "r")]
+      sPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "s")]
+      uPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "u")]
+      aPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "a")]
+      BPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "B")]
+      if(Model %in% c(3,4)) copPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "c")]
+      if(Model %in% c(5,6)) copPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "F")]
+      GPosterior<- inf.object[-(1:burn.in), startsWith(colnames(inf.object), "G")]
+
+    pred_Y<- array(NA, dim = c(ndept, time, nstrain))
+
+    thinning<- numeric(floor(nrow(rPosterior)/10))
+    thinning[1]<- 10
+    for(i in 2:length(thinning)){
+      thinning[i]<- thinning[i-1] + 10
+    }
+
+    G.draws<- GPosterior[thinning, ]
+    r.draws<- rPosterior[thinning, ]
+    s.draws<- sPosterior[thinning, ]
+    u.draws<- uPosterior[thinning, ]
+    B.draws<- BPosterior[thinning, ]
+    a.draws<- aPosterior[thinning, ]
+    if(Model %in% c(5,6)) cop.draws<- copPosterior[thinning, ]
+    if(Model %in% c(3,4)) cop.draws<- as.numeric(copPosterior)[thinning]
+
+    sum_Y<- array(NA, dim = c(length(thinning), time, nstrain))
+
+    if(Model == 0){
+      for(index in 1:length(thinning)){
+        for(i in 1:ndept){
+          for(t in 1:time){
+            m<- (t - 1) %% 12 + 1
+            Exlambda_it<- as.numeric(e_it[i, t] * exp(a.draws[index, ] + r.draws[index, t] + s.draws[index, m] + u.draws[index, i]))
+            pred_Y[i, t, ]<- rpois(nstrain, Exlambda_it)
+          }
+        }
+        for(k in 1:nstrain){
+        sum_Y[index, ,k]<- colSums(pred_Y[,,k])
+        }
+      }
+    }else{
+      for(index in 1:length(thinning)){
+        Gs<- as.numeric(G.draws[index,])
+        r<- as.numeric(r.draws[index,])
+        s<- as.numeric(s.draws[index,])
+        u<- as.numeric(u.draws[index,])
+        B<- as.numeric(B.draws[index,])
+        a_k<- as.numeric(a.draws[index,])
+        if(Model %in% c(5,6)){
+          cop<- as.numeric(cop.draws[index, ])
+        }else if(Model %in% c(3,4)){
+          cop<- cop.draws[index]
+        }else{
+          cop<- 0
+        }
+        if(Model == 1){
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Model)
+        }else if(Model == 2){
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Model)
+        }else if(Model == 5){
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gs, nstrain, cop, 3, gh)
+        }else if(Model == 6){
+          JointTPM<- Multipurpose_JointTransitionMatrix2(Gs, nstrain, cop, 4, gh)
+        }else if(Model == 3){
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, 5)
+        }else if(Model == 4){
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, 6)
+        }else if(Model == 7){
+          JointTPM<- Multipurpose_JointTransitionMatrix(Gs, nstrain, cop, Model)
+        }
+        P_itn <- PostOutbreakProbs_cpp(y = y, e_it = e_it, nstrain=nstrain, r = r, s = s, u = u, jointTPM = JointTPM, B = B, Bits = Bits, a_k = a_k, y_total = y_total)
+
+        Ex_Xit<- array(0, dim = c(ndept, time, nstrain))
+      for(n in 1:nstate){
+        for(k in 1:nstrain){
+          Ex_Xit[,,k] <- Ex_Xit[,,k] + Bits[n, k] * P_itn[,,n]
+        }
+      }
+        for(i in 1:ndept){
+          for(t in 1:time){
+            m<- (t - 1) %% 12 + 1
+
+            prob<- Ex_Xit[i, t, ]
+            if(any(Ex_Xit[i, t, ]>1)){
+              inddd<- which(Ex_Xit[i, t, ]>1)
+              prob[inddd]<- 1
+            }
+            P_Xit<- rbinom(nstrain, 1, prob = prob)
+            Exlambda_it<- as.numeric(e_it[i, t] * exp(a_k  + r.draws[index, t] + s.draws[index, m] + u.draws[index, i] + P_Xit * B))
+            pred_Y[i, t, ]<- rpois(nstrain, Exlambda_it)
+          }
+        }
+        for(k in 1:nstrain){
+        sum_Y[index, ,k]<- colSums(pred_Y[,,k])
+        }
+      }
+    }
+    strain_names<- c("NEIMENI_B", "NEIMENI_W", "NEIMENI_Y", "NEIMENI_C")
+    for(k in 1:nstrain){
+    inf.Y<- colMeans(sum_Y[,,k])
+    uCI.Y<- posterior_interval_custom(as.matrix.data.frame(sum_Y[,,k]))[,2]
+    lCI.Y<- posterior_interval_custom(as.matrix.data.frame(sum_Y[,,k]))[,1]
+
+    if(ggg==1 && k==1){
+      plot(0, type = "n", xlim = c(1,ncol(y[,,k])), ylim = c(0, 500), axes=F, main = strain_names[k], ylab = "Total case counts", xlab = "Time [month/year]", cex.axis = 1.7, cex.lab=2.0, cex.main=2.5)
+    }else if(ggg==1 && k>1){
+      plot(0, type = "n", xlim = c(1,ncol(y[,,k])), ylim = c(0, 100), axes=F, main = strain_names[k], ylab = "Total case counts", xlab = "Time [month/year]", cex.axis = 1.7, cex.lab=2.0, cex.main=2.5)
+    }else if(ggg>1 && k==1){
+      plot(0, type = "n", xlim = c(1,ncol(y[,,k])), ylim = c(0, 500), axes=F, main ="", ylab = "Total case counts", xlab = "Time [month/year]", cex.axis = 1.7, cex.lab=2.0, cex.main=2.0)
+    }else{
+      plot(0, type = "n", xlim = c(1,ncol(y[,,k])), ylim = c(0, 100), axes=F, ylab = "Total case counts", xlab = "Time [month/year]", cex.axis = 1.7, cex.lab=2.0)
+    }
+    polygon(c(1:length(inf.Y), rev(1:length(inf.Y))), c(lCI.Y, rev(uCI.Y)),
+            col = "pink", border = NA)
+    lines(1:length(inf.Y), inf.Y, col = "red", lty=1)
+    points(1:ncol(y[,,k]), colSums(y[,,k], na.rm = T), pch = 19)
+    grid()
+    #custom X-axis
+    years<- 2010:2019
+    axis(1, at = seq(1, time, by = 12), labels = years, cex.axis = 2.0)
+    if(k==1){
+    axis(2, at = seq(0, 500, by = 100), cex.axis = 2.0)
+    }else{
+      axis(2, at = seq(0, 100, by = 20), cex.axis = 2.0)
+    }
+    if(k==1)legendary::labelFig(LETTERS[Model+1], adj = c(-0.15, 0.10), font=2, cex=2.5)
+    }
+  }
+  add_legend("topright", legend=c("Truth", "Posterior means"), lty=c(NA, 1),
+             lwd=c(NA, 2),
+             pch=c(19, NA), col=c("black", "red"),
+             horiz=TRUE, bty='n', cex=2.0)
   dev.off()
 }
 

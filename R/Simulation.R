@@ -52,24 +52,29 @@ simulateMarkovChain<- function(nstep, TPM){
   return(states)
 }
 
-#' Title
+#' Simulation from the models proposed in (Adeoye et al. 2026)
 #'
-#' @param Modeltype Model specification
+#' @param Modeltype The model specification (0 = No epidemic model, 1 = Independent 1 model, 2 = Independent 2 model, 3 = Gaussian factor copula 1 model, 4 = Gaussian factor copula 2 model, 5 = Frank copula 1 model, 6 = Frank copula 2 model, 7 = General-dependent model).
 #' @param time Temporal dimension
 #' @param nstrain Number of disease types
-#' @param adj.matrix Adjacency matrix
-#' @param copulaParam Copula parameter(S)
-#' @param e_it Population dataset
-#' @param B Strain-specific outbreak effects
+#' @param adj.matrix The adjacency matrix describing the connectivity/neighborhood structure of the spatial locations.
+#' @param copulaParam Copula parameter(s)
+#' @param e_it A space-time matrix showing the number of susceptible individuals (locations on the row, and time on the columns).
+#' @param B Strain-specific epidemic effects
 #' @param T.prob Transition probabilities
 #' @param r Trend component
 #' @param s Seasonal component
 #' @param u spatial component
 #'
-#' @return Multi-type outbreaks data
+#' @return A 3D array of multi-type disease counts (dim=c(locations, time, types)).
 #' @export
 #'
-#' @examples mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+#' @examples set.seed(0)
+#' sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+#' uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+#' gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+#' gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+#' set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
 simulateMultiModel<- function(Modeltype, time, nstrain, adj.matrix, copulaParam,
                               e_it=matrix(c(rep(c(rpois(time, 500000), rpois(time, 1000000)), 4), rpois(time, 500000)),
                                           byrow = T, ncol = time),

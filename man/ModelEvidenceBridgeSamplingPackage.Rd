@@ -2,7 +2,7 @@
 % Please edit documentation in R/Modelcomparison.R
 \name{ModelEvidenceBridgeSamplingPackage}
 \alias{ModelEvidenceBridgeSamplingPackage}
-\title{Title}
+\title{Model evidence via bridge sampling}
 \usage{
 ModelEvidenceBridgeSamplingPackage(
   y,
@@ -15,8 +15,32 @@ ModelEvidenceBridgeSamplingPackage(
 )
 }
 \arguments{
-\item{cores}{}
+\item{y}{A 3D array of multi-type disease counts (dim=c(locations, time, types)).}
+
+\item{e_it}{A space-time matrix showing the number of susceptible individuals (locations on the row, and time on the columns).}
+
+\item{adjmat}{The adjacency matrix describing the connectivity/neighborhood structure of the spatial locations.}
+
+\item{Modeltype}{The model specification (0 = No epidemic model, 1 = Independent 1 model, 2 = Independent 2 model, 3 = Gaussian factor copula 1 model, 4 = Gaussian factor copula 2 model, 5 = Frank copula 1 model, 6 = Frank copula 2 model, 7 = General-dependent model).}
+
+\item{inf.object}{Resulting fit object from "SMOOTHING_INFERENCE".}
+
+\item{y_total}{A space-time matrix showing the total untyped disease counts if available (locations on the row, and time on the columns).}
+
+\item{cores}{Number of cores to be used (default is 1).}
+}
+\value{
+log marginal likelihood
 }
 \description{
-Title
+Model evidence via bridge sampling
+}
+\examples{
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+MCMCfit0<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 0, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+ModelEvidenceBridgeSamplingPackage(y=mod0[["y"]],e_it = mod0[["e_it"]],adjmat = sim_adjmat,Modeltype =0,inf.object = MCMCfit0,y_total = NULL)
 }

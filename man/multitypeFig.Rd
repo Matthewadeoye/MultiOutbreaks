@@ -2,12 +2,12 @@
 % Please edit documentation in R/Figures.R
 \name{multitypeFig}
 \alias{multitypeFig}
-\title{Title}
+\title{Plot a 3D array of multi-type disease counts (dim=c(locations, time, types)).}
 \usage{
 multitypeFig(y, Modeltype = "")
 }
 \arguments{
-\item{y}{Multitype data}
+\item{y}{A 3D array of multi-type disease counts (dim=c(locations, time, types)).}
 
 \item{Modeltype}{Model name (optional)}
 }
@@ -15,10 +15,14 @@ multitypeFig(y, Modeltype = "")
 Plot of the multitype data
 }
 \description{
-Title
+Plot a 3D array of multi-type disease counts (dim=c(locations, time, types)).
 }
 \examples{
 set.seed(0)
-mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
 multitypeFig(y=mod0[["y"]])
 }

@@ -7,8 +7,8 @@
 <!-- badges: end -->
 
 MultiOutbreaks is created to implement a Bayesian copula-based modelling
-of multi-type spatio-temporal infectious disease outbreak data as
-presented in [(Adeoye et al., 2026)](https://arxiv.org). The package is
+of multi-type spatio-temporal epidemic data as presented in [(Adeoye et
+al., 2026)](https://doi.org/10.48550/arXiv.2605.03608). The package is
 built with different functionalities including model simulations,
 Bayesian inference methods, model comparison methods, plotting of
 results, etc.
@@ -41,7 +41,8 @@ devtools::install_github("Matthewadeoye/MultiOutbreaks")
 ## Simulation, visualization, inference, and outbreak detection.
 
 An example showing how to simulate and plot multi-type space-time data
-from model-0 described in [(Adeoye et al., 2026)](https://arxiv.org):
+from model-0 described in [(Adeoye et al.,
+2026)](https://doi.org/10.48550/arXiv.2605.03608):
 
 ``` r
 library(MultiOutbreaks)
@@ -81,7 +82,7 @@ algorithm via MultiOutbreaks:
 ```
 
 Simulation, inference and multi outbreak detection as described in
-[(Adeoye et al., 2026)](https://arxiv.org/):
+[(Adeoye et al., 2026)](https://doi.org/10.48550/arXiv.2605.03608):
 
 ``` r
 library(MultiOutbreaks)
@@ -91,14 +92,14 @@ gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
 gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
 set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
 #multitypeFig(y=mod1[["y"]])
-#HMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
+#HMCfit1<- SMOOTHING_INFERENCE(y=mod1[["y"]], e_it=mod1[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = TRUE, GPU = FALSE)
 #mcmc.plot(HMCfit1)
 #inf.plot(HMCfit1)
 
 #MarginalProbabilitiesHMC<- Posteriormultstrain.Decoding(y=mod1[["y"]],e_it=mod1[["e_it"]],inf.object = HMCfit1,Modeltype = 1,y_total = NULL,thinningL = 10,burn.in = 2000)
 #image(t(MarginalProbabilities[,,1]))
 
-#MCMCfit1<- SMOOTHING_INFERENCE(y=mod0[["y"]], e_it=mod0[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+#MCMCfit1<- SMOOTHING_INFERENCE(y=mod1[["y"]], e_it=mod1[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
 #mcmc.plot(MCMCfit1)
 #inf.plot(MCMCfit1)
 

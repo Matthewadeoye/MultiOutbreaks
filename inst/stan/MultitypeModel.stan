@@ -81,11 +81,6 @@ real FrankCDF(real Psi, vector u){
 
     int S = intPower(2,K);
     matrix[S, S] Gamma;
-    array[2,2,K] real gamma2 = gamma;
-    for(m in 1:K){
-      gamma2[1,1,m] = gamma[1,2,m];
-      gamma2[1,2,m] = gamma[1,1,m];
-    }
 
     for (a in 0:(S-1)) {
       for (b in 0:(S-1)) {
@@ -105,7 +100,7 @@ real FrankCDF(real Psi, vector u){
             n0 += 1;
             zeros[n0] = k;
           }
-          prob[k] = gamma2[from_k + 1, to_k + 1, k];
+          prob[k] = gamma[from_k + 1, 2, k];
         }
         real total = 0;
 
@@ -306,21 +301,20 @@ if(Modeltype == 3 || Modeltype == 4){
   jointTPM = log(jointTPM);
   vector[ndept] log_forwards;
 
-  vector[nstate] BdotBits;
-  for (n in 1:nstate) {
-    BdotBits[n] = dot_product(B, Bits[n, ]);
-  }
-
   for (i in 1:ndept){
     vector[nstate] prodEmission = rep_vector(0, nstate);
   for(n in 1:nstate){
   for(k in 1:nstrain){
   if(y[i, 1, k] != -1){
-    prodEmission[n] += poisson_lpmf(y[i, 1, k] | e_it[i, 1] * exp(a_k[k] + r[1] + s[1] + u[i] + BdotBits[n]));
+    prodEmission[n] += poisson_lpmf(y[i, 1, k] | e_it[i, 1] * exp(a_k[k] + r[1] + s[1] + u[i] + B[k] * Bits[n, k]));
     }
   }
    if(sum(y[i, 1]) == -nstrain && y_total[i, 1] != -1){
-       prodEmission[n] += y_total[i, 1] * sum(log(e_it[i, 1] * exp(a_k + r[1] + s[1] + u[i] + BdotBits[n]))) - sum(e_it[i, 1] * exp(a_k + r[1] + s[1] + u[i] + BdotBits[n])) - lgamma(y_total[i, 1] + 1);
+     real sumRisksALL = 0;
+     for(k in 1:nstrain){
+       sumRisksALL += exp(a_k[k] + r[1] + s[1] + u[i] + B[k] * Bits[n, k]);
+     }
+       prodEmission[n] += y_total[i, 1] * log(e_it[i, 1] * sumRisksALL) - e_it[i, 1] * sumRisksALL - lgamma(y_total[i, 1] + 1);
     }
 }
    alpha_curr = log_init_density + prodEmission;
@@ -333,11 +327,15 @@ if(Modeltype == 3 || Modeltype == 4){
         for(n in 1:nstate){
         for(k in 1:nstrain){
         if(y[i, t, k] != -1){
-          prodEmission[n] += poisson_lpmf(y[i, t, k] | PoisMean_it * exp(a_k[k] + BdotBits[n]));
+          prodEmission[n] += poisson_lpmf(y[i, t, k] | PoisMean_it * exp(a_k[k] + B[k] * Bits[n, k]));
          }
         }
         if(sum(y[i, t]) == -nstrain && y_total[i, t] != -1){
-           prodEmission[n] += y_total[i, t] * sum(log(PoisMean_it .* exp(a_k + BdotBits[n]))) - sum(PoisMean_it .* exp(a_k + BdotBits[n])) - lgamma(y_total[i, t] + 1);
+           real sumRisksALLt = 0;
+         for(k in 1:nstrain){
+           sumRisksALLt += exp(a_k[k] + B[k] * Bits[n, k]);
+         }
+           prodEmission[n] += y_total[i, t] * log(PoisMean_it * sumRisksALLt) - PoisMean_it * sumRisksALLt - lgamma(y_total[i, t] + 1);
         }
       }
         alpha_curr = logVecMatMult(alpha_prev, jointTPM) + prodEmission;
@@ -419,7 +417,6 @@ model {
     if(Modeltype == 3){
         target += beta_lpdf(transitionParams[1] | 1, 11);
         target += beta_lpdf(transitionParams[2] | 6, 6);
-        target += logGDP(lambda_free);
     }else if(Modeltype == 4){
       int index = 0;
       for(i in 1:nstrain){
@@ -427,7 +424,6 @@ model {
         target += beta_lpdf(transitionParams[i+index+1] | 6, 6);
         index += 1;
         }
-        target += logGDP(lambda_free);
     }
       target += gamma_lpdf(B | 2, 2);
       if(nstrain==2){

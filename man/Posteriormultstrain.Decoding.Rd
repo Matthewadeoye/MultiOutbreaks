@@ -2,7 +2,7 @@
 % Please edit documentation in R/Utilities.R
 \name{Posteriormultstrain.Decoding}
 \alias{Posteriormultstrain.Decoding}
-\title{Title}
+\title{Posterior probability of epidemic per strain}
 \usage{
 Posteriormultstrain.Decoding(
   y,
@@ -10,13 +10,38 @@ Posteriormultstrain.Decoding(
   inf.object,
   Modeltype,
   y_total = NULL,
-  thinningL = 1000,
+  thinningL = 10,
   burn.in = 1000
 )
 }
 \arguments{
-\item{burn.in}{}
+\item{y}{A 3D array of multi-type disease counts (dim=c(locations, time, types)).}
+
+\item{e_it}{A space-time matrix showing the number of susceptible individuals (locations on the row, and time on the columns).}
+
+\item{inf.object}{Resulting fit object from "SMOOTHING_INFERENCE".}
+
+\item{Modeltype}{The model specification (0 = No epidemic model, 1 = Independent 1 model, 2 = Independent 2 model, 3 = Gaussian factor copula 1 model, 4 = Gaussian factor copula 2 model, 5 = Frank copula 1 model, 6 = Frank copula 2 model, 7 = General-dependent model).}
+
+\item{y_total}{A space-time matrix showing the total untyped disease counts if available (locations on the row, and time on the columns).}
+
+\item{thinningL}{Thinning length (default is 10).}
+
+\item{burn.in}{Burn-in samples (default is 1000).}
+}
+\value{
+A 3D array of posterior probabilities of epidemic (dim=c(locations, time, strain)).
 }
 \description{
-Title
+Posterior probability of epidemic per strain
+}
+\examples{
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
+MCMCfit1<- SMOOTHING_INFERENCE(y=mod1[["y"]], e_it=mod1[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+MarginalProbabilitiesMCMC<- Posteriormultstrain.Decoding(y=mod1[["y"]],e_it=mod1[["e_it"]],inf.object = MCMCfit1,Modeltype = 1,y_total = NULL,thinningL = 10,burn.in = 2000)
+image(t(MarginalProbabilitiesMCMC[,,1]))
 }

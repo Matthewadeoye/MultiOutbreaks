@@ -55,22 +55,30 @@ Multipurpose_JointTransitionMatrix2<- function(gammas, K, Lambdas, Modeltype, gh
   return(JointTPM)
 }
 
-#' Title
+#' Posterior probability of epidemic per strain
 #'
-#' @param y
-#' @param e_it
-#' @param inf.object
-#' @param Modeltype
-#' @param y_total
-#' @param thinningL
-#' @param burn.in
+#' @param y A 3D array of multi-type disease counts (dim=c(locations, time, types)).
+#' @param e_it A space-time matrix showing the number of susceptible individuals (locations on the row, and time on the columns).
+#' @param inf.object Resulting fit object from "SMOOTHING_INFERENCE".
+#' @param Modeltype The model specification (0 = No epidemic model, 1 = Independent 1 model, 2 = Independent 2 model, 3 = Gaussian factor copula 1 model, 4 = Gaussian factor copula 2 model, 5 = Frank copula 1 model, 6 = Frank copula 2 model, 7 = General-dependent model).
+#' @param y_total A space-time matrix showing the total untyped disease counts if available (locations on the row, and time on the columns).
+#' @param thinningL Thinning length (default is 10).
+#' @param burn.in Burn-in samples (default is 1000).
 #'
-#' @return
+#' @return A 3D array of posterior probabilities of epidemic (dim=c(locations, time, strain)).
 #' @export
 #'
 #' @examples
+#' sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+#' uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+#' gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+#' gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+#' set.seed(0); mod1<- simulateMultiModel(Modeltype = 1, time = 60, nstrain = 5, adj.matrix = sim_adjmat, B = c(1.2,2.4,1.1,0.4,0.7))
+#' MCMCfit1<- SMOOTHING_INFERENCE(y=mod1[["y"]], e_it=mod1[["e_it"]], Modeltype = 1, sim_adjmat, MCMC_iterations = 15000, HMC_iterations = 5000, Stan = FALSE, GPU = FALSE)
+#' MarginalProbabilitiesMCMC<- Posteriormultstrain.Decoding(y=mod1[["y"]],e_it=mod1[["e_it"]],inf.object = MCMCfit1,Modeltype = 1,y_total = NULL,thinningL = 10,burn.in = 2000)
+#' image(t(MarginalProbabilitiesMCMC[,,1]))
 Posteriormultstrain.Decoding<- function(y, e_it, inf.object, Modeltype, y_total=NULL,
-                                        thinningL=1000, burn.in=1000){
+                                        thinningL=10, burn.in=1000){
   ndept<- dim(y)[1]
   time<- dim(y)[2]
   nstrain<- dim(y)[3]
@@ -455,9 +463,9 @@ for(a in 1:S) {
   IndicesComplement <- integer(0)
 
   for(k in 1:K){
-    from_k <- ((a-1) %/% 2^(k-1)) %% 2
+    to_k <- ((a-1) %/% 2^(k-1)) %% 2
 
-    if(from_k == 1) Indices <- c(Indices,k)
+    if(to_k == 1) Indices <- c(Indices,k)
     else IndicesComplement <- c(IndicesComplement,k)
   }
 

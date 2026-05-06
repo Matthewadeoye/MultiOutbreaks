@@ -2,7 +2,7 @@
 % Please edit documentation in R/Simulation.R
 \name{simulateMultiModel}
 \alias{simulateMultiModel}
-\title{Title}
+\title{Simulation from the models proposed in (Adeoye et al. 2026)}
 \usage{
 simulateMultiModel(
   Modeltype,
@@ -20,19 +20,19 @@ simulateMultiModel(
 )
 }
 \arguments{
-\item{Modeltype}{Model specification}
+\item{Modeltype}{The model specification (0 = No epidemic model, 1 = Independent 1 model, 2 = Independent 2 model, 3 = Gaussian factor copula 1 model, 4 = Gaussian factor copula 2 model, 5 = Frank copula 1 model, 6 = Frank copula 2 model, 7 = General-dependent model).}
 
 \item{time}{Temporal dimension}
 
 \item{nstrain}{Number of disease types}
 
-\item{adj.matrix}{Adjacency matrix}
+\item{adj.matrix}{The adjacency matrix describing the connectivity/neighborhood structure of the spatial locations.}
 
-\item{copulaParam}{Copula parameter(S)}
+\item{copulaParam}{Copula parameter(s)}
 
-\item{e_it}{Population dataset}
+\item{e_it}{A space-time matrix showing the number of susceptible individuals (locations on the row, and time on the columns).}
 
-\item{B}{Strain-specific outbreak effects}
+\item{B}{Strain-specific epidemic effects}
 
 \item{T.prob}{Transition probabilities}
 
@@ -43,11 +43,16 @@ simulateMultiModel(
 \item{u}{spatial component}
 }
 \value{
-Multi-type outbreaks data
+A 3D array of multi-type disease counts (dim=c(locations, time, types)).
 }
 \description{
-Title
+Simulation from the models proposed in (Adeoye et al. 2026)
 }
 \examples{
-mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
+set.seed(0)
+sim_adjmat<- matrix(0, nrow = 9, ncol = 9)
+uppertriang<- c(1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,0,1,1,0,1)
+gdata::upperTriangle(sim_adjmat, byrow=TRUE)<- uppertriang
+gdata::lowerTriangle(sim_adjmat, byrow=FALSE)<- uppertriang
+set.seed(0); mod0<- simulateMultiModel(Modeltype = 0, time = 60, nstrain = 5, adj.matrix = sim_adjmat)
 }
