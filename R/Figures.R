@@ -42,12 +42,12 @@ multitypeFig<- function(y, Modeltype = ""){
         ylim(0, maxY) +
         labs(x = "Time [month]", y = "Case counts", color = "Location") +
         guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
-        theme(axis.title.y = element_text(size=18),
-              axis.title.x = element_text(size=18),
-              axis.text.x = element_text(size=16),
-              axis.text.y = element_text(size=16),
-              legend.title = element_text(size = 18),
-              legend.text = element_text(size = 16))
+        theme(axis.title.y = element_text(size=15),
+              axis.title.x = element_text(size=15),
+              axis.text.x = element_text(size=15),
+              axis.text.y = element_text(size=15),
+              legend.title = element_text(size = 15),
+              legend.text = element_text(size = 15))
     }else{
       rfigs<- ggplot2::ggplot(data = long_data, mapping = aes(x = Time, y = value, color = variable, linetype = variable)) +
         geom_line() +
@@ -56,21 +56,27 @@ multitypeFig<- function(y, Modeltype = ""){
         ylim(0, maxY) +
         labs(x = "Time [month]", y = "Case counts", color = "Location") +
         guides(color = guide_legend("Location"), linetype = guide_legend("Location")) +
-        theme(axis.title.y = element_text(size=18),
-              axis.title.x = element_text(size=18),
-              axis.text.x = element_text(size=16),
-              axis.text.y = element_text(size=16),
+        theme(axis.title.y = element_text(size=15),
+              axis.title.x = element_text(size=15),
+              axis.text.x = element_text(size=15),
+              axis.text.y = element_text(size=15),
               legend.position = "none")
     }
     plotlists[[Strain]]<- rfigs
   }
-  row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 17)
-  row_2<- cowplot::plot_grid(plotlist = plotlists[4:5], ncol = 3, labels = c("D", "E"), label_size = 17, rel_widths = c(1, 1.35, 0.65))
+  row_1<- cowplot::plot_grid(plotlist = plotlists[1:3], ncol = 3, labels = c("A", "B", "C"), label_size = 13)
+  row_2<- cowplot::plot_grid(plotlist = plotlists[4:5], ncol = 3, labels = c("D", "E"), label_size = 13, rel_widths = c(1, 1.35, 0.65))
   finalplot<- cowplot::plot_grid(row_1, row_2, nrow = 2)
-  print(finalplot)
-  add_legend(0.58, -0.18, legend=substitute(paste(bold(Modeltype))),
-             col="black",
-             horiz=TRUE, bty='n', cex=5.0)
+  title_plot <- cowplot::ggdraw() +
+    cowplot::draw_label(
+      Modeltype,
+      fontface = "bold",
+      x = 0.5,
+      hjust = 0.5,
+      size = 20
+    )
+  finalplot<- cowplot::plot_grid(finalplot, title_plot, ncol = 1, rel_heights = c(1, 0.08))
+  return(finalplot)
 }
 
 

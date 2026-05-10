@@ -991,8 +991,15 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
       grad_r = Qstz_r.t() * grad_r;
       arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
-      cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
-      cov_r = Qstz_r.t() * cov_r * Qstz_r;
+      arma::mat precision_r = diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8;
+      arma::mat cov_r_raw;
+      bool successR = arma::inv_sympd(cov_r_raw, precision_r);
+      if(!successR){
+        cov_r = arma::eye(time, time);
+        loglike_total = R_NegInf;
+      }else{
+        cov_r = Qstz_r.t() * cov_r_raw * Qstz_r;
+      }
 
       // Seasonal s gradients
       arma::vec fishervec_s(12, arma::fill::zeros);
@@ -1007,16 +1014,29 @@ List SMOOTHINGgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int 
       }
       grad_s -= Q_s * s;
       grad_s = Qstz_s.t() * grad_s;
-      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8);
-      cov_s = Qstz_s.t() * cov_s * Qstz_s;
-
+      arma::mat precision_s = arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8;
+      arma::mat cov_s_raw;
+      bool successS = arma::inv_sympd(cov_s_raw, precision_s);
+      if(!successS){
+        cov_s = arma::eye(12, 12);
+        loglike_total = R_NegInf;
+      }else{
+        cov_s = Qstz_s.t() * cov_s_raw * Qstz_s;
+      }
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
       grad_u = Qstz_u.t() * grad_u;
       arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
-      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
-      cov_u = Qstz_u.t() * cov_u * Qstz_u;
+      arma::mat precision_u = diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8;
+      arma::mat cov_u_raw;
+      bool successU = arma::inv_sympd(cov_u_raw, precision_u);
+      if(!successU){
+        cov_u = arma::eye(ndept, ndept);
+        loglike_total = R_NegInf;
+      }else{
+        cov_u = Qstz_u.t() * cov_u_raw * Qstz_u;
+      }
     }
 
     return List::create(
@@ -1265,8 +1285,15 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       grad_r = arma::sum(delta, 0).t() - Q_r * r;
       grad_r = Qstz_r.t() * grad_r;
       arma::mat diag_pois_colsum = arma::diagmat(arma::sum(poisMean, 0));
-      cov_r = arma::inv_sympd(diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8);
-      cov_r = Qstz_r.t() * cov_r * Qstz_r;
+      arma::mat precision_r = diag_pois_colsum + Q_r + arma::eye(time, time) * 1e-8;
+      arma::mat cov_r_raw;
+      bool successR = arma::inv_sympd(cov_r_raw, precision_r);
+      if(!successR){
+        cov_r = arma::eye(time, time);
+        loglike_total = R_NegInf;
+      }else{
+        cov_r = Qstz_r.t() * cov_r_raw * Qstz_r;
+      }
 
       // Seasonal s gradients
       arma::vec fishervec_s(12, arma::fill::zeros);
@@ -1281,15 +1308,29 @@ List FFBSgradmultstrainLoglikelihood_cpp(arma::cube y, arma::mat e_it, int nstra
       }
       grad_s -= Q_s * s;
       grad_s = Qstz_s.t() * grad_s;
-      cov_s = arma::inv_sympd(arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8);
-      cov_s = Qstz_s.t() * cov_s * Qstz_s;
+      arma::mat precision_s = arma::diagmat(fishervec_s) + Q_s  + arma::eye(12, 12) * 1e-8;
+      arma::mat cov_s_raw;
+      bool successS = arma::inv_sympd(cov_s_raw, precision_s);
+      if(!successS){
+        cov_s = arma::eye(12, 12);
+        loglike_total = R_NegInf;
+      }else{
+        cov_s = Qstz_s.t() * cov_s_raw * Qstz_s;
+      }
 
       // Spatial u gradients
       grad_u = arma::sum(delta, 1) - Q_u * u;
       grad_u = Qstz_u.t() * grad_u;
       arma::mat diag_pois_rowsum = arma::diagmat(arma::sum(poisMean, 1));
-      cov_u = arma::inv_sympd(diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8);
-      cov_u = Qstz_u.t() * cov_u * Qstz_u;
+      arma::mat precision_u = diag_pois_rowsum + Q_u + arma::eye(ndept, ndept) * 1e-8;
+      arma::mat cov_u_raw;
+      bool successU = arma::inv_sympd(cov_u_raw, precision_u);
+      if(!successU){
+        cov_u = arma::eye(ndept, ndept);
+        loglike_total = R_NegInf;
+      }else{
+        cov_u = Qstz_u.t() * cov_u_raw * Qstz_u;
+      }
     }
 
     return List::create(
